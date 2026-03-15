@@ -455,18 +455,36 @@ body{
   padding:16px;margin-bottom:10px;
 }
 .chart-title{font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:5px;color:var(--muted);margin-bottom:14px;text-transform:uppercase;}
-.bars{display:flex;align-items:flex-end;gap:4px;height:72px;}
-.bv{font-size:6px;color:var(--muted);}
-.br{width:100%;border-radius:2px 2px 0 0;transition:height .85s cubic-bezier(.34,1.4,.64,1);min-height:0;}
-.bl{font-size:6px;color:var(--muted);text-align:center;line-height:1.3;max-width:28px;word-break:break-all;}
+/* bar charts — NO fixed height; each column manages own layout */
+.bars{display:flex;align-items:stretch;gap:3px;}
 .subject-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
-.subject-bar-label{font-size:11px;color:var(--sub);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.subject-bar-label{font-size:11px;color:var(--sub);width:86px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .subject-bar-track{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
 .subject-bar-fill{height:100%;border-radius:3px;transition:width .95s ease;}
-.subject-bar-val{font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--sub);width:30px;text-align:right;flex-shrink:0;}
-.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
-.hm-cell{aspect-ratio:1;border-radius:3px;transition:background .3s;}
-.hm-dl{font-size:6px;color:var(--muted);font-family:'Bebas Neue',sans-serif;letter-spacing:1px;flex:1;text-align:center;}
+.subject-bar-val{font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--sub);width:34px;text-align:right;flex-shrink:0;}
+
+/* calendar heatmap */
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.hm-cell{border-radius:4px;transition:background .3s;}
+.hm-cell-cal{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  aspect-ratio:1;cursor:default;position:relative;
+}
+.hm-empty{background:transparent!important;pointer-events:none;}
+.hm-today{box-shadow:0 0 0 1.5px var(--blue)!important;}
+.hm-date{font-size:8px;color:rgba(255,255,255,.6);font-family:'Bebas Neue',sans-serif;letter-spacing:0;line-height:1.1;}
+.hm-hrs{font-size:7px;color:rgba(255,255,255,.9);font-family:'Bebas Neue',sans-serif;letter-spacing:0;line-height:1.2;margin-top:1px;}
+.hm-dl{font-size:7px;color:var(--muted);font-family:'Bebas Neue',sans-serif;letter-spacing:1px;flex:1;text-align:center;}
+.hm-nav-btn{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--bg3);border:1px solid var(--border);
+  color:var(--sub);font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;flex-shrink:0;line-height:1;
+  padding:0;
+}
+.hm-nav-btn:active{background:var(--bg4);}
+.hm-nav-btn:disabled{opacity:.28;cursor:default;pointer-events:none;}
 .ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .ach-card{
   background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
@@ -1027,22 +1045,33 @@ body{
           </div>
         </div>
 
-        <!-- Heatmap -->
+        <!-- Heatmap — navigable monthly calendar -->
         <div class="chart-card">
-          <div class="chart-title">28-DAY ACTIVITY HEATMAP</div>
-          <div style="display:flex;margin-bottom:5px;">
-            <div class="hm-dl">M</div><div class="hm-dl">T</div><div class="hm-dl">W</div>
-            <div class="hm-dl">T</div><div class="hm-dl">F</div><div class="hm-dl">S</div><div class="hm-dl">S</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <button class="hm-nav-btn" onclick="heatmapNav(-1)" title="Previous month">‹</button>
+            <div style="text-align:center;">
+              <div id="hm-month-label" style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:4px;color:var(--text);"></div>
+              <div id="hm-month-sub" style="font-size:8px;color:var(--muted);letter-spacing:2px;margin-top:1px;"></div>
+            </div>
+            <button class="hm-nav-btn" id="hm-next-btn" onclick="heatmapNav(1)" title="Next month">›</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">
+            <div class="hm-dl">MON</div><div class="hm-dl">TUE</div><div class="hm-dl">WED</div>
+            <div class="hm-dl">THU</div><div class="hm-dl">FRI</div><div class="hm-dl">SAT</div><div class="hm-dl">SUN</div>
           </div>
           <div class="heatmap" id="heatmap"></div>
-          <div style="display:flex;align-items:center;gap:5px;margin-top:9px;justify-content:flex-end;">
-            <div style="font-size:7px;color:var(--muted);">LESS</div>
-            <div style="width:9px;height:9px;border-radius:2px;background:#182030;"></div>
-            <div style="width:9px;height:9px;border-radius:2px;background:#1a4030;"></div>
-            <div style="width:9px;height:9px;border-radius:2px;background:rgba(0,229,160,.4);"></div>
-            <div style="width:9px;height:9px;border-radius:2px;background:var(--study);"></div>
-            <div style="width:9px;height:9px;border-radius:2px;background:var(--pyq);"></div>
-            <div style="font-size:7px;color:var(--muted);">MORE</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:10px;justify-content:flex-end;">
+            <div style="font-size:7px;color:var(--muted);margin-right:2px;">LESS</div>
+            <div style="width:10px;height:10px;border-radius:2px;background:#0e1828;"></div>
+            <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,200,255,.2);"></div>
+            <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,200,255,.5);"></div>
+            <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,200,255,.82);"></div>
+            <div style="width:10px;height:10px;border-radius:2px;background:rgba(255,45,135,.65);"></div>
+            <div style="font-size:7px;color:var(--muted);margin-left:2px;">MORE</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
+            <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:rgba(0,200,255,.82);"></div><div style="font-size:7px;color:var(--muted);">ACTIVE</div></div>
+            <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:rgba(255,45,135,.65);"></div><div style="font-size:7px;color:var(--muted);">PERFECT DAY</div></div>
           </div>
         </div>
 
@@ -1227,18 +1256,18 @@ const Q_EVENING   =["PYQ time. This is where rank is decided. Solve with intent.
 
 /* ── STRATEGY CONTENT DATA ──────────────────────────── */
 const SUBJECT_PRIORITIES=[
-  {name:"Algorithms",weight:"12–15 marks",level:"CRITICAL",color:"#FF2D87",badge:"bg:rgba(255,45,135,.12);color:#FF2D87;"},
-  {name:"DSA",        weight:"8–12 marks", level:"CRITICAL",color:"#FF2D87",badge:"bg:rgba(255,45,135,.12);color:#FF2D87;"},
-  {name:"Maths",      weight:"13–15 marks",level:"CRITICAL",color:"#FFB800",badge:"bg:rgba(255,184,0,.12);color:#FFB800;"},
-  {name:"Networks",   weight:"10–12 marks",level:"HIGH",    color:"#00C8FF",badge:"bg:rgba(0,200,255,.1);color:#00C8FF;"},
-  {name:"OS",         weight:"8–12 marks", level:"HIGH",    color:"#00C8FF",badge:"bg:rgba(0,200,255,.1);color:#00C8FF;"},
-  {name:"DBMS",       weight:"8–10 marks", level:"HIGH",    color:"#00E5A0",badge:"bg:rgba(0,229,160,.1);color:#00E5A0;"},
-  {name:"TOC",        weight:"6–8 marks",  level:"MEDIUM",  color:"#9B5FFF",badge:"bg:rgba(155,95,255,.1);color:#9B5FFF;"},
-  {name:"Compiler",   weight:"5–7 marks",  level:"MEDIUM",  color:"#9B5FFF",badge:"bg:rgba(155,95,255,.1);color:#9B5FFF;"},
-  {name:"Aptitude",   weight:"15 marks",   level:"FIXED",   color:"#FF8C42",badge:"bg:rgba(255,140,66,.1);color:#FF8C42;"},
-  {name:"Digital Logic",weight:"5–7 marks",level:"MEDIUM",  color:"#7A8496",badge:"bg:rgba(122,132,150,.1);color:#7A8496;"},
-  {name:"Arch",       weight:"4–6 marks",  level:"MEDIUM",  color:"#7A8496",badge:"bg:rgba(122,132,150,.1);color:#7A8496;"},
-  {name:"C/C++",      weight:"5–7 marks",  level:"MEDIUM",  color:"#7A8496",badge:"bg:rgba(122,132,150,.1);color:#7A8496;"},
+  {name:"Algorithms",  weight:"12–15 marks",level:"CRITICAL",color:"#FF2D87",badge:"background:rgba(255,45,135,.12);color:#FF2D87;"},
+  {name:"DSA",         weight:"8–12 marks", level:"CRITICAL",color:"#FF2D87",badge:"background:rgba(255,45,135,.12);color:#FF2D87;"},
+  {name:"Maths",       weight:"13–15 marks",level:"CRITICAL",color:"#FFB800",badge:"background:rgba(255,184,0,.12);color:#FFB800;"},
+  {name:"Networks",    weight:"10–12 marks",level:"HIGH",    color:"#00C8FF",badge:"background:rgba(0,200,255,.1);color:#00C8FF;"},
+  {name:"OS",          weight:"8–12 marks", level:"HIGH",    color:"#00C8FF",badge:"background:rgba(0,200,255,.1);color:#00C8FF;"},
+  {name:"DBMS",        weight:"8–10 marks", level:"HIGH",    color:"#00E5A0",badge:"background:rgba(0,229,160,.1);color:#00E5A0;"},
+  {name:"TOC",         weight:"6–8 marks",  level:"MEDIUM",  color:"#9B5FFF",badge:"background:rgba(155,95,255,.1);color:#9B5FFF;"},
+  {name:"Compiler",    weight:"5–7 marks",  level:"MEDIUM",  color:"#9B5FFF",badge:"background:rgba(155,95,255,.1);color:#9B5FFF;"},
+  {name:"Aptitude",    weight:"15 marks",   level:"FIXED",   color:"#FF8C42",badge:"background:rgba(255,140,66,.1);color:#FF8C42;"},
+  {name:"Digital Logic",weight:"5–7 marks", level:"MEDIUM",  color:"#7A8496",badge:"background:rgba(122,132,150,.1);color:#7A8496;"},
+  {name:"Arch",        weight:"4–6 marks",  level:"MEDIUM",  color:"#7A8496",badge:"background:rgba(122,132,150,.1);color:#7A8496;"},
+  {name:"C/C++",       weight:"5–7 marks",  level:"MEDIUM",  color:"#7A8496",badge:"background:rgba(122,132,150,.1);color:#7A8496;"},
 ];
 
 const PHASES=[
@@ -1315,6 +1344,7 @@ let weekChallengeIds=[],weekChallengesWeek="";
 let pomoMode="full";
 let timerState=null,timerInterval=null;
 let quoteIdx=0,obStep=0;
+let heatmapMonthOffset=0; // 0=current month, -1=prev month, etc.
 
 /* ── STORAGE ────────────────────────────────────────── */
 const SK="gate_grind_v5";
@@ -1599,7 +1629,7 @@ function generateInsight(){
   BLOCKS.forEach(b=>{blockRates[b.id]=days7.filter(k=>(history[k]||[]).includes(b.id)).length/7;});
   const weakStudy=["s1","s2","s3"].sort((a,b)=>blockRates[a]-blockRates[b])[0];
   const weakBlock=BLOCKS.find(b=>b.id===weakStudy);
-  if(blockRates[weakStudy]<.5)insights.push({icon:"⚠️",text:`${weakBlock.label} only done ${Math.round(blockRates[weakStudy]*100)}% of days. This is your biggest gap.`,action:"Fix this slot today"});
+  if(weakBlock&&blockRates[weakStudy]<.5)insights.push({icon:"⚠️",text:`${weakBlock.label} only done ${Math.round(blockRates[weakStudy]*100)}% of days. This is your biggest gap.`,action:"Fix this slot today"});
   if(streak>=5)insights.push({icon:"🔥",text:`${streak}-day streak! You're in the top 5% of GATE aspirants for consistency.`,action:"Don't break it today"});
   const pyqRate=(blockRates["p1"]+blockRates["p2"])/2;
   if(pyqRate<.4)insights.push({icon:"📝",text:"PYQ completion is low. PYQ practice is 40% of GATE score. Prioritise it.",action:"Both PYQ blocks today"});
@@ -1724,8 +1754,13 @@ function renderBlocks(){
         tag.textContent=sub;
         tag.onclick=()=>{
           todaySubjects[block.id]=(selSub===sub)?null:sub;
+          // Persist to historySubjects only for completed blocks
           if(!historySubjects[todayKey])historySubjects[todayKey]={};
-          historySubjects[todayKey]=Object.assign({},todaySubjects);
+          // Copy only completed blocks' subjects into history
+          historySubjects[todayKey]={};
+          Object.entries(todaySubjects).forEach(([bid,s])=>{
+            if(s&&todayDone.includes(bid))historySubjects[todayKey][bid]=s;
+          });
           save();renderBlocks();
         };
         tagRow.appendChild(tag);
@@ -1789,6 +1824,13 @@ function markDone(block){
   totalXP+=earned;
   todayDone=[...todayDone,block.id];
   history[todayKey]=[...todayDone];
+
+  // Sync historySubjects: only completed blocks' subject tags count
+  if(!historySubjects[todayKey])historySubjects[todayKey]={};
+  historySubjects[todayKey]={};
+  Object.entries(todaySubjects).forEach(([bid,s])=>{
+    if(s&&todayDone.includes(bid))historySubjects[todayKey][bid]=s;
+  });
 
   // Streak logic
   if(lastActiveDay!==todayKey){
@@ -2013,7 +2055,7 @@ function setRing(circleId,valId,pct,circ,label){
   if(!c||!v)return;
   const filled=pct*circ;
   c.style.strokeDasharray=`${filled} ${circ-filled}`;
-  c.style.strokeDashoffset=circ*.25;
+  c.style.strokeDashoffset=-(circ*.25);
   v.textContent=label;
 }
 
@@ -2037,82 +2079,123 @@ function renderStats(){
   document.getElementById("s-perfect").textContent=perfectCount({history});
   document.getElementById("s-beststreak").textContent=Math.max(streak,bestStreak);
 
-  // 7-day XP chart
+  // 7-day XP chart — value shows XP number
   renderBarChart("ch-7xp",days7.map(k=>{
     const xp=BLOCKS.filter(b=>(history[k]||[]).includes(b.id)).reduce((a,b)=>a+b.xp,0);
     const d=new Date(k);
-    return{val:xp,label:["M","T","W","T","F","S","S"][(d.getDay()+6)%7],color:"var(--study)"};
-  }),TOTAL_DAY_XP);
+    const labels=["M","T","W","T","F","S","S"];
+    return{val:xp,label:labels[(d.getDay()+6)%7],color:"var(--study)"};
+  }),{fmt:v=>v>=1000?(v/1000).toFixed(1)+"k":String(v)});
 
-  // 14-day completion
+  // 14-day block completion — value shows blocks done e.g. "7/10"
   const days14=getLast14Days();
   renderBarChart("ch-14comp",days14.map(k=>{
+    const cnt=(history[k]||[]).length;
     const d=new Date(k);
-    return{val:(history[k]||[]).length,label:d.getDate().toString(),color:"var(--purple)"};
-  }),BLOCKS.length);
+    return{val:cnt,label:String(d.getDate()),color:"var(--purple)"};
+  }),{fmt:v=>v+"/"+BLOCKS.length});
 
-  // Study vs PYQ grouped
+  // Study vs PYQ stacked chart — redesigned with total label
   const bkEl=document.getElementById("ch-breakdown");
   if(bkEl){
     bkEl.innerHTML="";
-    const maxH=Math.max(...days7.map(k=>{
+    const MAX_H=60;
+    // compute per-day data first
+    const bkData=days7.map(k=>{
       const sh=BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((a,b)=>a+b.hours,0);
       const ph=BLOCKS.filter(b=>b.type==="pyq"  &&(history[k]||[]).includes(b.id)).reduce((a,b)=>a+b.hours,0);
-      return sh+ph;
-    }),0.1);
-    days7.forEach(k=>{
-      const sh=BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((a,b)=>a+b.hours,0);
-      const ph=BLOCKS.filter(b=>b.type==="pyq"  &&(history[k]||[]).includes(b.id)).reduce((a,b)=>a+b.hours,0);
-      const d=new Date(k);const lbl=["M","T","W","T","F","S","S"][(d.getDay()+6)%7];
+      const d=new Date(k);
+      return{sh,ph,total:sh+ph,label:["M","T","W","T","F","S","S"][(d.getDay()+6)%7]};
+    });
+    const globalMax=Math.max(...bkData.map(d=>d.total),0.01);
+    bkData.forEach(day=>{
+      const shPx=day.sh>0?Math.max(Math.round((day.sh/globalMax)*MAX_H),3):0;
+      const phPx=day.ph>0?Math.max(Math.round((day.ph/globalMax)*MAX_H),3):0;
+      const totalPx=shPx+phPx;
       const col=document.createElement("div");
-      col.style.cssText="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end;height:72px;";
-      const sp=document.createElement("div");sp.style.cssText=`width:100%;background:var(--study);border-radius:2px 2px 0 0;height:${sh/maxH*52}px;transition:height .8s ease;`;
-      const pp=document.createElement("div");pp.style.cssText=`width:100%;background:var(--pyq);border-radius:2px 2px 0 0;height:${ph/maxH*52}px;transition:height .8s ease;`;
-      const la=document.createElement("div");la.className="bl";la.textContent=lbl;
-      col.appendChild(sp);col.appendChild(pp);col.appendChild(la);
+      col.style.cssText="flex:1;display:flex;flex-direction:column;align-items:center;";
+
+      // Total value label
+      const vl=document.createElement("div");
+      vl.style.cssText="height:14px;display:flex;align-items:flex-end;justify-content:center;"
+        +"font-family:'Bebas Neue',sans-serif;font-size:8px;color:var(--sub);letter-spacing:0;white-space:nowrap;";
+      vl.textContent=day.total>0?day.total+"h":"";
+
+      // Fixed bar area — study on bottom, PYQ on top (stacked)
+      const barea=document.createElement("div");
+      barea.style.cssText=`width:100%;height:${MAX_H}px;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;padding:0 1px;gap:0;`;
+      // PYQ bar (on top in stacked)
+      if(phPx>0){
+        const pb=document.createElement("div");
+        pb.style.cssText=`width:100%;height:${phPx}px;background:var(--pyq);border-radius:2px 2px 0 0;transition:height .8s ease;`;
+        barea.appendChild(pb);
+      }
+      // Study bar (on bottom)
+      if(shPx>0){
+        const sb=document.createElement("div");
+        sb.style.cssText=`width:100%;height:${shPx}px;background:var(--study);border-radius:${phPx>0?"0":"2px 2px"} 0 0;transition:height .8s ease;`;
+        barea.appendChild(sb);
+      }
+      // Empty placeholder when no bars
+      if(shPx===0&&phPx===0){
+        const empty=document.createElement("div");
+        empty.style.cssText="width:100%;height:3px;background:var(--bg3);border-radius:2px;";
+        barea.appendChild(empty);
+      }
+
+      const dl=document.createElement("div");
+      dl.style.cssText="font-size:7px;color:var(--muted);text-align:center;margin-top:4px;";
+      dl.textContent=day.label;
+
+      col.appendChild(vl);col.appendChild(barea);col.appendChild(dl);
       bkEl.appendChild(col);
     });
   }
 
-  // Subject stats
-  const subMap={};
+  // Subject hours — only count blocks that were actually completed that day
+  const subHrs={};
   Object.keys(historySubjects).forEach(day=>{
     const subs=historySubjects[day]||{};
-    Object.values(subs).forEach(sub=>{if(sub)subMap[sub]=(subMap[sub]||0)+1;});
+    const completedBlocks=history[day]||[];            // blocks completed on that day
+    Object.entries(subs).forEach(([blockId,sub])=>{
+      if(!sub)return;
+      if(!completedBlocks.includes(blockId))return;    // block not completed → skip
+      const blk=BLOCKS.find(b=>b.id===blockId);
+      const hrs=blk?blk.hours:0;
+      subHrs[sub]=(subHrs[sub]||0)+hrs;
+    });
+  });
+  // Also include today's tagged+completed blocks (not yet flushed to history)
+  Object.entries(todaySubjects).forEach(([blockId,sub])=>{
+    if(!sub)return;
+    if(!todayDone.includes(blockId))return;            // not completed today → skip
+    // Avoid double-counting if today is already in historySubjects
+    if(historySubjects[todayKey]&&historySubjects[todayKey][blockId]===sub)return;
+    const blk=BLOCKS.find(b=>b.id===blockId);
+    const hrs=blk?blk.hours:0;
+    subHrs[sub]=(subHrs[sub]||0)+hrs;
   });
   const subEl=document.getElementById("subject-stats-container");
   if(subEl){
-    const entries=Object.entries(subMap).sort((a,b)=>b[1]-a[1]);
+    const entries=Object.entries(subHrs).filter(([,h])=>h>0).sort((a,b)=>b[1]-a[1]);
     if(!entries.length){
-      subEl.innerHTML='<div style="font-size:11px;color:var(--muted);font-style:italic;text-align:center;padding:16px 0;">Tag study blocks with subjects to see distribution</div>';
+      subEl.innerHTML='<div style="font-size:11px;color:var(--muted);font-style:italic;text-align:center;padding:16px 0;">Tag study blocks with subjects to see hours distribution</div>';
     }else{
       subEl.innerHTML="";
-      const mx=entries[0][1];
+      const maxHrs=entries[0][1];
       const subColors=["#00C8FF","#FF2D87","#FFB800","#00E5A0","#9B5FFF","#FF8C42","#00E5C4","#FF5555","#A0785A","#8B8FA8","#00C8FF","#FF2D87"];
-      entries.forEach(([sub,cnt],i)=>{
+      entries.forEach(([sub,hrs],i)=>{
         const row=document.createElement("div");row.className="subject-bar-row";
         row.innerHTML=`<div class="subject-bar-label">${sub}</div>
-          <div class="subject-bar-track"><div class="subject-bar-fill" style="width:${(cnt/mx)*100}%;background:${subColors[i%subColors.length]};"></div></div>
-          <div class="subject-bar-val">${cnt}</div>`;
+          <div class="subject-bar-track"><div class="subject-bar-fill" style="width:${(hrs/maxHrs)*100}%;background:${subColors[i%subColors.length]};"></div></div>
+          <div class="subject-bar-val">${hrs%1===0?hrs:hrs.toFixed(1)}h</div>`;
         subEl.appendChild(row);
       });
     }
   }
 
-  // Heatmap
-  const hmEl=document.getElementById("heatmap");
-  if(hmEl){
-    hmEl.innerHTML="";
-    const days28=getLast28Days();
-    days28.forEach(k=>{
-      const cnt=(history[k]||[]).length;
-      const cell=document.createElement("div");cell.className="hm-cell";
-      cell.title=`${k}: ${cnt} blocks`;
-      const bg=cnt===0?"#182030":cnt<3?"#1a4030":cnt<6?"rgba(0,229,160,.4)":cnt<BLOCKS.length?"var(--study)":"var(--pyq)";
-      cell.style.background=bg;
-      hmEl.appendChild(cell);
-    });
-  }
+  // Heatmap — rendered by dedicated function
+  renderHeatmap();
 
   // Achievements
   const ag=document.getElementById("ach-grid");
@@ -2131,18 +2214,150 @@ function renderStats(){
   }
 }
 
-function renderBarChart(containerId,data,maxVal){
+/* ── BAR CHART ENGINE ─────────────────────────────────── */
+// opts: { fmt: fn(val)=>string }  — optional value formatter
+function renderBarChart(containerId,data,opts){
   const el=document.getElementById(containerId);if(!el)return;
   el.innerHTML="";
-  const mx=Math.max(...data.map(d=>d.val),maxVal*.05);
+
+  const MAX_BAR_H=60; // px — fixed bar area height
+  const vals=data.map(d=>d.val);
+  const rawMax=Math.max(...vals,0);
+  const mx=rawMax>0?rawMax:1; // safe division floor
+
   data.forEach(d=>{
+    const barPx=d.val>0?Math.max(Math.round((d.val/mx)*MAX_BAR_H),4):0;
+    const fmtVal=d.val>0?(opts&&opts.fmt?opts.fmt(d.val):String(d.val)):"";
+
     const col=document.createElement("div");
-    col.style.cssText="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end;height:72px;";
-    const bar=document.createElement("div");bar.className="br";
-    bar.style.cssText=`background:${d.color};height:${Math.max(d.val/mx*60,d.val>0?3:0)}px;`;
-    const lbl=document.createElement("div");lbl.className="bl";lbl.textContent=d.label;
-    col.appendChild(bar);col.appendChild(lbl);el.appendChild(col);
+    col.style.cssText="flex:1;display:flex;flex-direction:column;align-items:center;";
+
+    // Value label (top)
+    const vl=document.createElement("div");
+    vl.style.cssText="height:14px;display:flex;align-items:flex-end;justify-content:center;"
+      +"font-family:'Bebas Neue',sans-serif;font-size:8px;color:var(--sub);letter-spacing:0;"
+      +"white-space:nowrap;overflow:hidden;width:100%;";
+    vl.textContent=fmtVal;
+
+    // Fixed-height bar area (grows from bottom)
+    const barea=document.createElement("div");
+    barea.style.cssText=`width:100%;height:${MAX_BAR_H}px;display:flex;align-items:flex-end;padding:0 1px;`;
+    const bar=document.createElement("div");
+    bar.style.cssText=`width:100%;height:${barPx}px;background:${d.color};`
+      +"border-radius:2px 2px 0 0;transition:height .85s cubic-bezier(.34,1.4,.64,1);";
+    barea.appendChild(bar);
+
+    // Day/date label (bottom)
+    const dl=document.createElement("div");
+    dl.style.cssText="font-size:7px;color:var(--muted);text-align:center;margin-top:4px;"
+      +"line-height:1;max-width:100%;overflow:hidden;white-space:nowrap;";
+    dl.textContent=d.label;
+
+    col.appendChild(vl);col.appendChild(barea);col.appendChild(dl);
+    el.appendChild(col);
   });
+}
+
+/* ── HEATMAP ─────────────────────────────────────────── */
+const MONTH_NAMES=["January","February","March","April","May","June",
+                   "July","August","September","October","November","December"];
+
+function renderHeatmap(){
+  const hmEl=document.getElementById("heatmap");
+  const monthLabel=document.getElementById("hm-month-label");
+  const monthSub=document.getElementById("hm-month-sub");
+  const nextBtn=document.getElementById("hm-next-btn");
+  if(!hmEl)return;
+
+  const now=new Date();
+  const target=new Date(now.getFullYear(),now.getMonth()+heatmapMonthOffset,1);
+  const year=target.getFullYear();
+  const month=target.getMonth(); // 0-indexed
+
+  if(monthLabel)monthLabel.textContent=MONTH_NAMES[month]+" "+year;
+
+  // Sub-label: total study hours that month
+  const daysInMonthCount=new Date(year,month+1,0).getDate();
+  let monthStudyHrs=0;
+  for(let d=1;d<=daysInMonthCount;d++){
+    const k=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const blocks=history[k]||[];
+    monthStudyHrs+=BLOCKS.filter(b=>(b.type==="study"||b.type==="pyq")&&blocks.includes(b.id)).reduce((a,b)=>a+b.hours,0);
+  }
+  if(monthSub)monthSub.textContent=monthStudyHrs>0?`${monthStudyHrs.toFixed(1)}H TOTAL THIS MONTH`:"NO ACTIVITY LOGGED";
+
+  // Disable next button when already at current month
+  const isCurrentMonth=year===now.getFullYear()&&month===now.getMonth();
+  if(nextBtn){
+    nextBtn.disabled=isCurrentMonth;
+    nextBtn.style.opacity=isCurrentMonth?"0.28":"1";
+  }
+
+  const firstDayOfMonth=new Date(year,month,1);
+  // Monday-start: Mon=0 ... Sun=6
+  const startOffset=(firstDayOfMonth.getDay()+6)%7;
+
+  hmEl.innerHTML="";
+  const todayStr=getToday();
+
+  // Empty leading cells
+  for(let i=0;i<startOffset;i++){
+    const empty=document.createElement("div");
+    empty.className="hm-cell hm-empty";
+    hmEl.appendChild(empty);
+  }
+
+  // Day cells
+  for(let day=1;day<=daysInMonthCount;day++){
+    const dateKey=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    const blocks=history[dateKey]||[];
+    const isToday=dateKey===todayStr;
+    const isFuture=dateKey>todayStr;
+
+    // Combined study+PYQ hours
+    const studyH=BLOCKS.filter(b=>b.type==="study"&&blocks.includes(b.id)).reduce((a,b)=>a+b.hours,0);
+    const pyqH  =BLOCKS.filter(b=>b.type==="pyq"  &&blocks.includes(b.id)).reduce((a,b)=>a+b.hours,0);
+    const totalH=studyH+pyqH;
+    const isPerfect=blocks.length===BLOCKS.length&&blocks.length>0;
+
+    // Colour intensity by hours
+    let bg;
+    if(isFuture){         bg="rgba(255,255,255,.03)";}
+    else if(totalH===0){  bg="#0e1828";}
+    else if(totalH<2){    bg="rgba(0,200,255,.18)";}
+    else if(totalH<4){    bg="rgba(0,200,255,.36)";}
+    else if(totalH<6){    bg="rgba(0,200,255,.58)";}
+    else if(isPerfect){   bg="rgba(255,45,135,.65)";}
+    else{                 bg="rgba(0,200,255,.85)";}
+
+    const cell=document.createElement("div");
+    cell.className="hm-cell hm-cell-cal"+(isToday?" hm-today":"");
+    cell.style.cssText=`background:${bg};`;
+    cell.title=`${dateKey}${totalH>0?" · "+totalH+"h study+PYQ":""}${isPerfect?" · PERFECT DAY":""}`;
+
+    const dateDiv=document.createElement("div");
+    dateDiv.className="hm-date";
+    dateDiv.textContent=day;
+
+    cell.appendChild(dateDiv);
+
+    if(!isFuture&&totalH>0){
+      const hrsDiv=document.createElement("div");
+      hrsDiv.className="hm-hrs";
+      hrsDiv.textContent=(totalH%1===0?totalH:totalH.toFixed(1))+"h";
+      cell.appendChild(hrsDiv);
+    }
+
+    hmEl.appendChild(cell);
+  }
+}
+
+function heatmapNav(dir){
+  const newOffset=heatmapMonthOffset+dir;
+  if(newOffset>0)return;   // can't go into future
+  if(newOffset<-24)return; // max 2 years back
+  heatmapMonthOffset=newOffset;
+  renderHeatmap();
 }
 
 /* ── LOG ─────────────────────────────────────────────── */
@@ -2251,13 +2466,13 @@ function toggleSetting(k){
   if(k==="sound"&&settings.sound)SOUNDS.complete();
   if(k==="vibrate"&&settings.vibrate)vib([30,10,50]);
 }
-function updateGoal(v){weeklyGoalXP=parseInt(v);document.getElementById("goal-display").textContent=parseInt(v).toLocaleString();save();renderHeader();}
+function updateGoal(v){weeklyGoalXP=parseInt(v,10);document.getElementById("goal-display").textContent=parseInt(v,10).toLocaleString();save();renderHeader();}
 function updateName(v){userName=v;save();renderHeader();}
 function updateExamDate(v){examDate=v;save();renderHeader();}
 function useStreakFreeze(){if(streakFreezes<=0){SOUNDS.error();return;}streakFreezes=-1;save();applySettings();SOUNDS.freeze();vib([50,30,80]);showToast("🛡 Streak freeze activated!");}
 
 function exportData(){
-  const data={exportDate:new Date().toISOString(),appVersion:"5.0",totalXP,streak,bestStreak,lastActiveDay,todayKey,todayDone,todayNotes,todaySubjects,history,historySubjects,historyNotes,achievements,streakFreezes,lastFreezeWeek,settings,weeklyGoalXP,userName,examDate,weekChallengeIds,weekChallengesWeek};
+  const data={exportDate:new Date().toISOString(),appVersion:"5.0",totalXP,streak,bestStreak,lastActiveDay,todayKey,todayDone,todayNotes,todaySubjects,history,historySubjects,historyNotes,achievements,streakFreezes,lastFreezeWeek,settings,weeklyGoalXP,userName,examDate,weekChallengeIds,weekChallengesWeek,onboardingDone};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);const a=document.createElement("a");
   a.href=url;a.download=`gate-grind-v5-backup-${getToday()}.json`;
@@ -2293,6 +2508,7 @@ function handleImport(input){
       examDate      =data.examDate||"";
       weekChallengeIds=data.weekChallengeIds||[];
       weekChallengesWeek=data.weekChallengesWeek||"";
+      onboardingDone=data.onboardingDone!==undefined?!!data.onboardingDone:true;
       save();renderAll();applySettings();showToast("✅ Backup restored!");SOUNDS.achievement();
     }catch(err){showToast("❌ Invalid backup file");SOUNDS.error();}
   };
