@@ -1,0 +1,2387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#04080F"/>
+<meta name="apple-mobile-web-app-title" content="GATE Grind"/>
+<title>GATE Grind</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET ─────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+button{font-family:inherit;cursor:pointer;}
+input,textarea{font-family:inherit;}
+
+/* ── DESIGN TOKENS ──────────────────────────── */
+:root{
+  --bg:   #04080F;
+  --bg2:  #090F1E;
+  --bg3:  #0E1828;
+  --bg4:  #162038;
+
+  --glass:rgba(255,255,255,0.03);
+  --glass2:rgba(255,255,255,0.06);
+  --glass3:rgba(255,255,255,0.09);
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.13);
+  --border3:rgba(255,255,255,0.18);
+
+  --text:#EAE4D8;
+  --sub:#7A8496;
+  --muted:#414958;
+  --dim:#1A2335;
+
+  --blue:#00C8FF;
+  --pink:#FF2D87;
+  --gold:#FFB800;
+  --green:#00E5A0;
+  --purple:#9B5FFF;
+  --warm:#FF8C42;
+  --red:#FF5555;
+  --teal:#00E5C4;
+
+  --study:#00C8FF;
+  --pyq:#FF2D87;
+  --accent:#00C8FF;
+
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+
+  --radius-sm:8px;
+  --radius:12px;
+  --radius-lg:16px;
+  --radius-xl:22px;
+
+  --shadow-sm:0 2px 12px rgba(0,0,0,.4);
+  --shadow:0 4px 24px rgba(0,0,0,.55);
+  --shadow-lg:0 8px 40px rgba(0,0,0,.7);
+}
+
+html{height:100%;background:var(--bg);}
+body{
+  height:100%;
+  font-family:'DM Sans',sans-serif;
+  color:var(--text);
+  background:var(--bg);
+  max-width:480px;
+  margin:0 auto;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ── AMBIENT BACKGROUND ─────────────────────── */
+.bg-ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.bg-ambient::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 70% 45% at 5% -5%,  rgba(0,200,255,.07) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 40% at 95% 105%,rgba(255,45,135,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 35% at 55% 55%, rgba(155,95,255,.035) 0%,transparent 70%);
+}
+.bg-ambient::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 30% 20% at 75% 20%,rgba(255,184,0,.025) 0%,transparent 60%);
+}
+.bg-grid{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.016) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.016) 1px,transparent 1px);
+  background-size:28px 28px;
+  mask-image:radial-gradient(ellipse at 50% 25%,black 15%,transparent 70%);
+}
+.bg-noise{
+  position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.18;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* ── APP SHELL ──────────────────────────────── */
+#app{
+  height:100dvh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  position:relative;
+  z-index:1;
+}
+#scroll-area{
+  flex:1;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+#scroll-area::-webkit-scrollbar{display:none;}
+
+/* ── SPLASH ─────────────────────────────────── */
+#splash{
+  position:fixed;inset:0;z-index:999;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  transition:opacity .8s cubic-bezier(.4,0,.2,1);
+}
+#splash.out{opacity:0;pointer-events:none;}
+.splash-logo{
+  width:82px;height:82px;border-radius:24px;
+  background:linear-gradient(135deg,rgba(0,200,255,.13),rgba(255,45,135,.13));
+  border:1px solid rgba(0,200,255,.22);
+  display:flex;align-items:center;justify-content:center;font-size:40px;
+  animation:splashFloat 2.6s ease-in-out infinite;
+  box-shadow:0 0 50px rgba(0,200,255,.12),0 0 100px rgba(0,200,255,.06),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.splash-title{
+  font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:14px;
+  background:linear-gradient(135deg,var(--blue) 20%,var(--pink) 80%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 20px rgba(0,200,255,.2));
+}
+.splash-sub{font-size:10px;letter-spacing:6px;color:var(--muted);text-transform:uppercase;}
+.splash-track{width:120px;height:1px;background:var(--bg3);border-radius:1px;overflow:hidden;margin-top:4px;}
+.splash-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--pink));animation:splashProg 1.8s cubic-bezier(.4,0,.2,1) forwards;}
+@keyframes splashFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-8px) rotate(1deg)}}
+@keyframes splashProg{from{width:0}to{width:100%}}
+
+/* ── ONBOARDING ─────────────────────────────── */
+#onboarding{
+  position:fixed;inset:0;z-index:998;
+  background:var(--bg);
+  display:none;flex-direction:column;
+  padding:calc(50px + var(--safe-top)) 28px 44px;
+}
+#onboarding.show{display:flex;}
+.ob-dots{display:flex;gap:8px;justify-content:center;margin-bottom:44px;}
+.ob-dot{width:6px;height:6px;border-radius:3px;background:var(--dim);transition:all .38s cubic-bezier(.34,1.56,.64,1);}
+.ob-dot.active{width:24px;background:var(--blue);}
+.ob-step{display:none;flex-direction:column;flex:1;animation:paneIn .3s ease;}
+.ob-step.active{display:flex;}
+.ob-icon{font-size:60px;margin-bottom:26px;}
+.ob-title{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:4px;color:var(--text);margin-bottom:12px;}
+.ob-desc{font-size:14px;color:var(--sub);line-height:1.8;margin-bottom:30px;}
+.ob-input{
+  width:100%;padding:16px 18px;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);
+  color:var(--text);font-size:15px;outline:none;margin-bottom:12px;
+  transition:border-color .2s,box-shadow .2s;
+}
+.ob-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,200,255,.09);}
+.ob-btn{
+  width:100%;padding:17px;margin-top:auto;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  border:none;border-radius:var(--radius);
+  color:#fff;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:4px;
+  transition:filter .2s,transform .15s;
+  box-shadow:0 4px 20px rgba(0,200,255,.2);
+}
+.ob-btn:active{filter:brightness(1.12);transform:scale(.98);}
+.ob-skip{text-align:center;font-size:11px;color:var(--muted);margin-top:14px;letter-spacing:3px;cursor:pointer;transition:color .2s;}
+.ob-skip:hover{color:var(--sub);}
+
+/* ── HEADER ─────────────────────────────────── */
+#header{
+  padding:calc(10px + var(--safe-top)) 14px 11px;
+  background:rgba(4,8,15,.97);
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;position:relative;z-index:10;
+}
+.hdr-row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;}
+.hdr-left .greeting{font-size:9px;letter-spacing:4px;color:var(--muted);margin-bottom:1px;text-transform:uppercase;}
+.hdr-left .user-name{font-family:'Bebas Neue',sans-serif;font-size:23px;letter-spacing:4px;color:var(--text);line-height:1;}
+.hdr-right{display:flex;align-items:center;gap:8px;}
+.streak-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;
+  background:var(--bg3);border:1px solid rgba(255,140,66,.22);
+  border-radius:30px;
+  transition:border-color .3s,box-shadow .3s;
+}
+.streak-pill.active{border-color:rgba(255,140,66,.5);box-shadow:0 0 16px rgba(255,140,66,.14);}
+.streak-num{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--warm);letter-spacing:1px;line-height:1;}
+.streak-lbl{font-size:8px;color:var(--muted);letter-spacing:2px;}
+.settings-btn{
+  width:35px;height:35px;border-radius:50%;
+  background:var(--bg3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;transition:all .2s;flex-shrink:0;
+}
+.settings-btn:active{background:var(--bg4);transform:scale(.92);}
+.hdr-countdown{font-size:9px;color:var(--muted);letter-spacing:2px;text-align:right;margin-top:2px;}
+
+/* READINESS */
+.readiness-wrap{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:11px 14px;margin-bottom:8px;
+  position:relative;overflow:hidden;
+}
+.readiness-wrap::before{
+  content:'';position:absolute;right:-20px;top:-20px;
+  width:80px;height:80px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(0,200,255,.05) 0%,transparent 70%);
+  pointer-events:none;
+}
+.readiness-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.readiness-label{font-size:8px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;}
+.readiness-score{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;}
+.readiness-track{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.readiness-fill{height:100%;border-radius:2px;transition:width 1.3s cubic-bezier(.34,1.4,.64,1);}
+.readiness-insight{font-size:9px;color:var(--muted);margin-top:5px;font-style:italic;}
+
+/* MINI STATS */
+.mini-row{display:flex;gap:5px;margin-bottom:8px;}
+.mini-card{
+  flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:9px;
+  padding:7px 4px;text-align:center;
+  transition:border-color .25s;
+}
+.mini-val{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;line-height:1;}
+.mini-lbl{font-size:7px;letter-spacing:2px;color:var(--muted);margin-top:2px;text-transform:uppercase;}
+
+/* PROGRESS BARS */
+.prog-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.prog-track{flex:1;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.34,1.4,.64,1);}
+.prog-txt{font-size:9px;color:var(--muted);letter-spacing:1px;white-space:nowrap;}
+.xp-row{display:flex;justify-content:space-between;font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:3px;}
+
+/* ── QUOTE BAR ───────────────────────────────── */
+#quote-bar{
+  padding:9px 16px;
+  font-size:11px;color:var(--muted);font-style:italic;line-height:1.65;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  background:rgba(4,8,15,.96);
+  backdrop-filter:blur(12px);
+  flex-shrink:0;position:relative;z-index:10;
+  min-height:36px;
+}
+
+/* ── INSIGHT STRIP ───────────────────────────── */
+#insight-strip{
+  display:none;
+  align-items:flex-start;gap:10px;
+  padding:9px 14px;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  background:rgba(4,8,15,.95);
+  flex-shrink:0;z-index:10;
+}
+#insight-strip.show{display:flex;}
+.insight-icon{font-size:15px;flex-shrink:0;margin-top:1px;}
+.insight-text{font-size:11px;color:var(--sub);line-height:1.55;}
+.insight-action{font-size:9px;letter-spacing:2px;color:var(--blue);margin-top:3px;font-weight:600;}
+
+/* ── TIMER BAR ───────────────────────────────── */
+#timer-bar{
+  display:none;
+  align-items:center;gap:12px;
+  margin:10px 14px 0;
+  padding:12px 14px;
+  border-radius:var(--radius);
+  overflow:hidden;position:relative;
+  flex-shrink:0;z-index:10;
+}
+#timer-bar.active{display:flex;}
+#timer-disp{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;line-height:1;}
+.timer-meta{flex:1;min-width:0;}
+.timer-mode-lbl{font-size:8px;letter-spacing:3px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;}
+.timer-name{font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.timer-ctrl{display:flex;gap:5px;}
+.tctrl-btn{
+  padding:6px 11px;background:var(--glass);border:1px solid var(--border);
+  border-radius:7px;color:var(--sub);font-size:11px;transition:all .15s;
+}
+.tctrl-btn:active{background:var(--glass2);}
+.timer-prog-track{position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(255,255,255,.04);}
+.timer-prog-fill{height:100%;transition:width 1s linear;}
+
+/* ── POMO TOGGLE ─────────────────────────────── */
+.pomo-row{display:flex;gap:5px;margin-bottom:8px;padding:0 14px;}
+.pomo-btn{
+  flex:1;padding:7px 4px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  font-size:9px;letter-spacing:2px;color:var(--muted);
+  text-align:center;transition:all .2s;font-family:'Bebas Neue',sans-serif;
+}
+.pomo-btn.active{
+  background:rgba(0,200,255,.1);border-color:rgba(0,200,255,.38);color:var(--blue);
+  box-shadow:0 0 12px rgba(0,200,255,.08);
+}
+
+/* ── BOTTOM NAV ──────────────────────────────── */
+#nav{
+  display:flex;
+  border-top:1px solid var(--border);
+  background:rgba(4,8,15,.98);
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  flex-shrink:0;
+  padding-bottom:var(--safe-bot);
+  position:relative;z-index:20;
+}
+.nav-btn{
+  flex:1;padding:10px 0 7px;background:none;border:none;
+  color:var(--muted);
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  transition:color .2s;position:relative;
+  font-family:'Bebas Neue',sans-serif;font-size:8px;letter-spacing:2px;
+}
+.nav-btn.active{color:var(--accent);}
+.nav-btn.active::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:32px;height:2px;background:var(--accent);border-radius:0 0 3px 3px;
+}
+.nav-icon{font-size:18px;line-height:1;}
+
+/* ── TAB SYSTEM ──────────────────────────────── */
+.tab-pane{display:none;}
+.tab-pane.active{display:block;animation:paneIn .25s ease;}
+@keyframes paneIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.tab-pad{padding:12px 14px 100px;}
+.section-hdr{
+  font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:5px;
+  color:var(--muted);margin-bottom:10px;text-transform:uppercase;
+}
+
+/* ── BLOCK CARDS ─────────────────────────────── */
+.block-card{
+  position:relative;margin-bottom:8px;padding:14px 14px;
+  border-radius:var(--radius-lg);overflow:hidden;
+  background:var(--bg2);border:1px solid var(--border);
+  transition:transform .15s,border-color .25s,box-shadow .25s;
+}
+.block-card:active{transform:scale(.988);}
+.block-card.done{opacity:.9;}
+.block-card.next-up{
+  border-color:rgba(255,255,255,.14);
+  box-shadow:0 4px 28px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.05);
+}
+.bleft{position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0;}
+.btype{
+  position:absolute;top:11px;right:12px;
+  font-family:'Bebas Neue',sans-serif;font-size:7px;letter-spacing:3px;
+  padding:2px 8px;border-radius:20px;border:1px solid transparent;
+  text-transform:uppercase;
+}
+.binner{display:flex;gap:12px;align-items:flex-start;}
+.bemoji{font-size:23px;flex-shrink:0;margin-top:2px;}
+.bcontent{flex:1;min-width:0;padding-right:48px;}
+.btitle{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--sub);margin-bottom:2px;}
+.btitle.done{color:var(--text);}
+.btime{font-size:9px;letter-spacing:2px;margin-bottom:5px;opacity:.85;}
+.btip{font-size:11px;color:var(--muted);line-height:1.65;font-style:italic;}
+
+/* SUBJECT TAGS */
+.subject-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.subject-tag{
+  font-size:9px;letter-spacing:1px;padding:3px 9px;
+  border-radius:20px;border:1px solid transparent;
+  transition:all .18s;font-family:'Bebas Neue',sans-serif;
+}
+.subject-tag.unsel{background:var(--bg3);border-color:var(--border);color:var(--muted);}
+.subject-tag.sel{background:rgba(0,200,255,.12);border-color:rgba(0,200,255,.38);color:var(--blue);}
+.subject-tag.unsel:active{background:var(--bg4);}
+
+/* NOTES */
+.note-wrap{margin-top:7px;}
+.note-toggle-btn{
+  font-size:9px;letter-spacing:2px;color:var(--muted);
+  background:none;border:none;padding:2px 0;transition:color .2s;
+  font-family:'Bebas Neue',sans-serif;
+}
+.note-toggle-btn:active{color:var(--sub);}
+.note-area{
+  display:none;width:100%;margin-top:6px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:9px 11px;color:var(--text);font-size:12px;
+  resize:none;outline:none;line-height:1.65;
+  transition:border-color .2s,max-height .3s ease;
+}
+.note-area.open{display:block;}
+.note-area:focus{border-color:var(--border2);}
+
+/* BLOCK BUTTONS */
+.btn-row{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
+.btn-base{
+  padding:8px 14px;border-radius:9px;border:1px solid transparent;
+  font-size:10px;letter-spacing:2px;font-family:'Bebas Neue',sans-serif;
+  transition:all .18s;
+}
+.btn-base:active{filter:brightness(1.18);transform:scale(.97);}
+.btn-timer{background:var(--glass);}
+.btn-done{flex:1;}
+.btn-done:disabled{opacity:.7;cursor:default;}
+
+/* XP FLOAT */
+.fxp{
+  position:absolute;top:12px;right:12px;z-index:99;
+  font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;
+  pointer-events:none;
+  animation:floatUp 1.5s cubic-bezier(.25,1,.5,1) forwards;
+}
+.pcv{position:absolute;top:0;left:0;pointer-events:none;z-index:98;}
+@keyframes floatUp{
+  0%{opacity:1;transform:translateY(0) scale(1)}
+  60%{opacity:1;transform:translateY(-26px) scale(1.12)}
+  100%{opacity:0;transform:translateY(-44px) scale(.9)}
+}
+
+/* PERFECT BANNER */
+#perfect-banner{
+  display:none;
+  padding:32px 22px;margin-top:8px;
+  background:linear-gradient(135deg,rgba(255,184,0,.07),rgba(255,45,135,.05));
+  border:1px solid rgba(255,184,0,.2);border-radius:var(--radius-xl);
+  text-align:center;animation:badgePop .4s ease;
+}
+#perfect-banner.show{display:block;}
+
+/* ── STATS CHARTS ────────────────────────────── */
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;text-align:center;
+}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;margin-bottom:3px;}
+.stat-lbl{font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.ring-wrap{position:relative;display:inline-block;}
+.ring-inner{
+  position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;flex-direction:column;
+}
+.chart-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:16px;margin-bottom:10px;
+}
+.chart-title{font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:5px;color:var(--muted);margin-bottom:14px;text-transform:uppercase;}
+.bars{display:flex;align-items:flex-end;gap:4px;height:72px;}
+.bv{font-size:6px;color:var(--muted);}
+.br{width:100%;border-radius:2px 2px 0 0;transition:height .85s cubic-bezier(.34,1.4,.64,1);min-height:0;}
+.bl{font-size:6px;color:var(--muted);text-align:center;line-height:1.3;max-width:28px;word-break:break-all;}
+.subject-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.subject-bar-label{font-size:11px;color:var(--sub);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.subject-bar-track{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.subject-bar-fill{height:100%;border-radius:3px;transition:width .95s ease;}
+.subject-bar-val{font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--sub);width:30px;text-align:right;flex-shrink:0;}
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.hm-cell{aspect-ratio:1;border-radius:3px;transition:background .3s;}
+.hm-dl{font-size:6px;color:var(--muted);font-family:'Bebas Neue',sans-serif;letter-spacing:1px;flex:1;text-align:center;}
+.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ach-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:13px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px;
+  transition:all .3s;
+}
+.ach-card.unlocked{border-color:rgba(255,184,0,.3);background:rgba(255,184,0,.05);}
+.ach-card.locked{opacity:.18;filter:grayscale(.9);}
+
+/* ── LOG ─────────────────────────────────────── */
+.log-day{margin-bottom:16px;}
+.log-day-hdr{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 12px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:9px;margin-bottom:6px;
+}
+.log-entry{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  padding:9px 13px;
+  background:rgba(255,255,255,.012);border:1px solid rgba(255,255,255,.04);
+  border-radius:8px;margin-bottom:4px;
+}
+.log-note{font-size:10px;color:var(--muted);font-style:italic;padding:3px 13px 8px;line-height:1.55;}
+
+/* ── RANK ────────────────────────────────────── */
+.rank-hero-card{text-align:center;padding:28px 16px 24px;border-radius:var(--radius-xl);margin-bottom:14px;}
+.rank-row-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 10px;border-radius:9px;margin-bottom:3px;
+  border:1px solid transparent;transition:all .25s;
+}
+.rank-row-item.current{border-color:rgba(255,255,255,.1);}
+.contract-row{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 10px;border-radius:7px;
+  background:rgba(255,255,255,.013);margin-bottom:5px;
+}
+
+/* ── SETTINGS ────────────────────────────────── */
+.settings-section{margin-bottom:24px;}
+.settings-section-title{
+  font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:5px;
+  color:var(--muted);margin-bottom:10px;text-transform:uppercase;
+}
+.settings-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:13px 14px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);margin-bottom:6px;
+}
+.settings-label{font-size:13px;color:var(--text);}
+.settings-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.toggle{
+  width:46px;height:25px;border-radius:13px;
+  background:var(--bg3);border:1px solid var(--border);
+  position:relative;cursor:pointer;transition:background .3s;flex-shrink:0;
+}
+.toggle.on{background:var(--green);border-color:var(--green);}
+.toggle::after{
+  content:'';position:absolute;top:3px;left:3px;
+  width:17px;height:17px;border-radius:50%;background:#fff;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.toggle.on::after{transform:translateX(21px);}
+.action-btn{
+  width:100%;padding:14px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);color:var(--text);
+  font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:3px;
+  text-align:center;transition:all .2s;margin-bottom:7px;
+}
+.action-btn:active{filter:brightness(1.2);}
+.action-btn.success{border-color:rgba(0,229,160,.3);color:var(--green);}
+.action-btn.danger{border-color:rgba(255,85,85,.3);color:var(--red);}
+
+/* ── WEEKLY CHALLENGES ───────────────────────── */
+.challenge-card{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:12px 13px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);margin-bottom:6px;transition:all .3s;
+}
+.challenge-card.done{background:rgba(0,229,160,.05);border-color:rgba(0,229,160,.25);}
+.ch-icon{font-size:20px;flex-shrink:0;margin-top:1px;}
+.ch-content{flex:1;min-width:0;}
+.ch-name{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text);margin-bottom:2px;}
+.ch-desc{font-size:10px;color:var(--muted);margin-bottom:7px;}
+.ch-prog-wrap{}
+.ch-prog-track{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:4px;}
+.ch-prog-fill{height:100%;border-radius:2px;transition:width .7s ease;}
+.ch-xp{font-family:'Bebas Neue',sans-serif;font-size:10px;color:var(--gold);}
+
+/* ── STRATEGY TAB ────────────────────────────── */
+.strategy-section{margin-bottom:18px;}
+.strategy-section-hdr{
+  font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:5px;
+  color:var(--muted);margin-bottom:10px;text-transform:uppercase;
+}
+.topper-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:16px;margin-bottom:8px;
+  position:relative;overflow:hidden;
+  transition:border-color .25s;
+}
+.topper-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  border-radius:0 2px 2px 0;
+}
+.topper-card:active{opacity:.88;}
+.tc-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.tc-icon{font-size:22px;flex-shrink:0;}
+.tc-title{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--text);}
+.tc-sub{font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:1px;text-transform:uppercase;}
+.tc-body{font-size:12px;color:var(--sub);line-height:1.75;}
+.tc-body li{margin-bottom:5px;list-style:none;padding-left:14px;position:relative;}
+.tc-body li::before{content:'›';position:absolute;left:0;color:var(--blue);font-size:13px;}
+
+.subject-priority-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px;}
+.spg-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:11px 13px;
+  position:relative;overflow:hidden;
+}
+.spg-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+}
+.spg-name{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:2px;color:var(--text);margin-bottom:3px;}
+.spg-weight{font-size:10px;color:var(--muted);}
+.spg-badge{
+  display:inline-block;font-size:8px;letter-spacing:2px;font-family:'Bebas Neue',sans-serif;
+  padding:2px 7px;border-radius:20px;margin-top:4px;
+}
+
+.phase-timeline{display:flex;flex-direction:column;gap:0;}
+.phase-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:12px 0;
+  position:relative;
+}
+.phase-item:not(:last-child)::after{
+  content:'';position:absolute;left:15px;top:38px;bottom:0;
+  width:1px;background:var(--border);
+}
+.phase-dot{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;margin-top:2px;
+  border:1px solid transparent;
+}
+.phase-content{}
+.phase-title{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text);margin-bottom:3px;}
+.phase-desc{font-size:11px;color:var(--muted);line-height:1.65;}
+
+/* ── OVERLAYS ────────────────────────────────── */
+#rankup-overlay{
+  position:fixed;top:0;left:0;right:0;max-width:480px;margin:0 auto;z-index:90;
+  padding:18px 20px;text-align:center;
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border-bottom:1px solid transparent;
+  display:none;pointer-events:none;
+}
+#rankup-overlay.show{display:block;animation:slideOverlay 4.2s ease forwards;}
+#ach-overlay{
+  position:fixed;top:0;left:0;right:0;max-width:480px;margin:0 auto;z-index:91;
+  padding:13px 16px;display:none;align-items:center;gap:13px;
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border-bottom:1px solid rgba(255,184,0,.28);background:rgba(255,184,0,.07);
+  pointer-events:none;
+}
+#ach-overlay.show{display:flex;animation:slideOverlay 3.8s ease forwards;}
+#combo-overlay{
+  position:fixed;top:0;left:0;right:0;max-width:480px;margin:0 auto;z-index:89;
+  padding:8px 16px;text-align:center;pointer-events:none;display:none;
+}
+#combo-overlay.show{display:block;animation:slideOverlay 2.8s ease forwards;}
+@keyframes slideOverlay{
+  0%{opacity:0;transform:translateY(-100%)}
+  12%{opacity:1;transform:translateY(0)}
+  82%{opacity:1;transform:translateY(0)}
+  100%{opacity:0;transform:translateY(-16px)}
+}
+
+/* ── TOAST ───────────────────────────────────── */
+.toast{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);
+  padding:11px 18px;font-size:11px;color:var(--text);z-index:200;
+  white-space:nowrap;box-shadow:var(--shadow-lg);
+  pointer-events:none;animation:toastIn .3s ease;
+}
+@keyframes toastIn{
+  from{opacity:0;transform:translateX(-50%) translateY(10px)}
+  to{opacity:1;transform:translateX(-50%) translateY(0)}
+}
+
+/* ── MISC ANIMATIONS ─────────────────────────── */
+@keyframes flameDance{0%,100%{transform:scaleY(1) scaleX(1)}33%{transform:scaleY(1.12) scaleX(.94)}66%{transform:scaleY(.95) scaleX(1.05)}}
+@keyframes pulseAnim{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes glowAnim{0%,100%{opacity:.7}50%{opacity:1}}
+@keyframes badgePop{0%{transform:scale(0)}55%{transform:scale(1.25)}100%{transform:scale(1)}}
+.flame-anim{animation:flameDance 1.9s infinite;display:inline-block;transform-origin:bottom center;}
+.pulse-anim{animation:pulseAnim 1.5s infinite;}
+.glow-anim{animation:glowAnim 3s infinite;}
+
+/* ── GLASS CARD UTILITY ──────────────────────── */
+.glass-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);}
+.divider{height:1px;background:var(--border);margin:8px 0;}
+</style>
+</head>
+
+<body>
+<div class="bg-ambient"></div>
+<div class="bg-grid"></div>
+<div class="bg-noise"></div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">⚔️</div>
+  <div class="splash-title">GATE GRIND</div>
+  <div class="splash-sub">Elite Discipline · Precision Tracking</div>
+  <div class="splash-track"><div class="splash-fill"></div></div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="onboarding">
+  <div class="ob-dots" id="ob-dots"></div>
+  <div class="ob-step active" id="ob-step-0">
+    <div class="ob-icon">⚔️</div>
+    <div class="ob-title">Welcome to Gate Grind</div>
+    <div class="ob-desc">Your elite GATE preparation system. 9.5 hours of structured study every day. Built for warriors who refuse to settle for anything less than AIR 1.</div>
+    <button class="ob-btn" onclick="nextStep()">GET STARTED</button>
+  </div>
+  <div class="ob-step" id="ob-step-1">
+    <div class="ob-icon">👤</div>
+    <div class="ob-title">What's Your Name?</div>
+    <div class="ob-desc">The app will personalise your dashboard, greetings and milestones just for you.</div>
+    <input class="ob-input" id="ob-name" placeholder="Enter your name" type="text" maxlength="20" autocomplete="off"/>
+    <button class="ob-btn" onclick="nextStep()">CONTINUE</button>
+    <div class="ob-skip" onclick="nextStep()">SKIP</div>
+  </div>
+  <div class="ob-step" id="ob-step-2">
+    <div class="ob-icon">🎯</div>
+    <div class="ob-title">Your GATE Exam Date</div>
+    <div class="ob-desc">Setting your exam date unlocks the countdown timer, preparation timeline and readiness algorithm calibrated to your target.</div>
+    <input class="ob-input" id="ob-exam-date" type="date"/>
+    <button class="ob-btn" onclick="finishOnboarding()">START GRINDING</button>
+    <div class="ob-skip" onclick="finishOnboarding()">SKIP FOR NOW</div>
+  </div>
+</div>
+
+<!-- RANK UP OVERLAY -->
+<div id="rankup-overlay">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:8px;margin-bottom:4px;" id="ru-eyebrow">⬆ RANK UP ⬆</div>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:5px;" id="ru-name"></div>
+  <div style="font-size:11px;color:#888;margin-top:3px;font-style:italic;" id="ru-desc"></div>
+</div>
+
+<!-- ACHIEVEMENT OVERLAY -->
+<div id="ach-overlay">
+  <div id="ach-ov-icon" style="font-size:32px;flex-shrink:0;animation:badgePop .4s ease;"></div>
+  <div style="flex:1;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:8px;letter-spacing:5px;color:var(--gold);margin-bottom:2px;">ACHIEVEMENT UNLOCKED</div>
+    <div id="ach-ov-name" style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:3px;color:var(--gold);"></div>
+    <div id="ach-ov-desc" style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic;"></div>
+  </div>
+</div>
+
+<!-- COMBO OVERLAY -->
+<div id="combo-overlay"></div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div class="hdr-row1">
+      <div class="hdr-left">
+        <div class="greeting" id="greeting">GOOD MORNING,</div>
+        <div class="user-name" id="user-name-display">WARRIOR</div>
+      </div>
+      <div class="hdr-right">
+        <div class="streak-pill" id="streak-pill">
+          <div id="flame-icon" style="font-size:16px;">🔥</div>
+          <div class="streak-num" id="streak-val">0</div>
+          <div class="streak-lbl">STREAK</div>
+        </div>
+        <button class="settings-btn" onclick="switchTab('settings')" title="Settings">⚙</button>
+      </div>
+    </div>
+    <div id="exam-countdown" class="hdr-countdown" style="display:none;"></div>
+
+    <!-- READINESS -->
+    <div class="readiness-wrap">
+      <div class="readiness-top">
+        <div class="readiness-label">GATE READINESS</div>
+        <div class="readiness-score" id="readiness-score">0%</div>
+      </div>
+      <div class="readiness-track">
+        <div class="readiness-fill" id="readiness-fill"></div>
+      </div>
+      <div class="readiness-insight" id="readiness-insight"></div>
+    </div>
+
+    <!-- MINI STATS -->
+    <div class="mini-row">
+      <div class="mini-card">
+        <div class="mini-val" id="hdr-study" style="color:var(--study);">-</div>
+        <div class="mini-lbl">STUDY</div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-val" id="hdr-pyq" style="color:var(--pyq);">-</div>
+        <div class="mini-lbl">PYQ</div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-val" id="hdr-blocks" style="color:var(--sub);">-</div>
+        <div class="mini-lbl">BLOCKS</div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-val" id="hdr-xp" style="color:var(--gold);">-</div>
+        <div class="mini-lbl">XP TODAY</div>
+      </div>
+    </div>
+
+    <!-- DAY PROGRESS -->
+    <div class="prog-row">
+      <div class="prog-track">
+        <div class="prog-fill" id="day-prog" style="background:linear-gradient(90deg,var(--study),var(--pyq));"></div>
+      </div>
+      <div class="prog-txt" id="day-pct">0%</div>
+    </div>
+
+    <!-- XP BAR -->
+    <div class="xp-row">
+      <span id="xp-val"></span><span id="xp-next"></span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="xp-bar"></div></div>
+  </div>
+
+  <!-- QUOTE BAR -->
+  <div id="quote-bar"></div>
+
+  <!-- INSIGHT STRIP -->
+  <div id="insight-strip">
+    <div class="insight-icon" id="insight-icon">💡</div>
+    <div>
+      <div class="insight-text" id="insight-text"></div>
+      <div class="insight-action" id="insight-action"></div>
+    </div>
+  </div>
+
+  <!-- TIMER BAR -->
+  <div id="timer-bar">
+    <div style="font-size:18px;" class="pulse-anim">⏱</div>
+    <div class="timer-meta">
+      <div class="timer-mode-lbl" id="timer-mode-lbl">FOCUS SESSION</div>
+      <div class="timer-name" id="timer-session-name"></div>
+    </div>
+    <div id="timer-disp">00:00</div>
+    <div class="timer-ctrl">
+      <button class="tctrl-btn" onclick="toggleTimer()" id="timer-pause-btn">⏸</button>
+      <button class="tctrl-btn" onclick="stopTimer()">✕</button>
+    </div>
+    <div class="timer-prog-track"><div class="timer-prog-fill" id="timer-prog-fill"></div></div>
+  </div>
+
+  <!-- SCROLL AREA -->
+  <div id="scroll-area">
+
+    <!-- ═══ TODAY TAB ═══ -->
+    <div id="tab-today" class="tab-pane active">
+      <div style="height:10px;"></div>
+
+      <!-- POMO SELECTOR -->
+      <div class="pomo-row">
+        <button class="pomo-btn" onclick="setPomoMode('full')" id="pomo-full">📚 FULL SESSION</button>
+        <button class="pomo-btn" onclick="setPomoMode('50')" id="pomo-50">⚡ 50/10</button>
+        <button class="pomo-btn" onclick="setPomoMode('25')" id="pomo-25">🍅 25/5</button>
+      </div>
+
+      <!-- WEEKLY CHALLENGES -->
+      <div style="padding:0 14px;margin-bottom:10px;">
+        <div class="section-hdr" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>THIS WEEK'S CHALLENGES</span>
+          <span id="challenges-xp" style="color:var(--gold);font-size:9px;letter-spacing:2px;"></span>
+        </div>
+        <div id="challenges-container"></div>
+      </div>
+
+      <!-- SESSION BLOCKS -->
+      <div style="padding:0 14px;">
+        <div class="section-hdr">TODAY'S SESSIONS</div>
+        <div id="blocks-container"></div>
+        <div id="perfect-banner">
+          <div style="font-size:54px;margin-bottom:13px;">🏆</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:8px;background:linear-gradient(90deg,var(--gold),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:9px;">PERFECT DAY</div>
+          <div style="font-size:13px;color:var(--muted);font-style:italic;line-height:1.85;">9.5 hours of pure output.<br/>The person who cracks GATE looks exactly like you right now.</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--gold);letter-spacing:4px;margin-top:16px;" id="perfect-xp"></div>
+        </div>
+      </div>
+      <div style="height:16px;"></div>
+    </div>
+
+    <!-- ═══ STRATEGY TAB ═══ -->
+    <div id="tab-strategy" class="tab-pane">
+      <div class="tab-pad">
+
+        <!-- Topper Principles -->
+        <div class="strategy-section">
+          <div class="strategy-section-hdr">TOPPER PRINCIPLES</div>
+
+          <div class="topper-card" style="border-color:rgba(0,200,255,.18);">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blue);border-radius:0 2px 2px 0;"></div>
+            <div class="tc-head">
+              <div class="tc-icon">📖</div>
+              <div><div class="tc-title">PYQ IS YOUR BIBLE</div><div class="tc-sub">Source: AIR 1–50 strategies</div></div>
+            </div>
+            <ul class="tc-body">
+              <li>Solve 15+ years of PYQs for every subject — minimum twice.</li>
+              <li>GATE repeats patterns. The solver of old papers always wins.</li>
+              <li>Understand every wrong option, not just the right answer.</li>
+              <li>Time yourself in exam conditions. 3 mins/question maximum.</li>
+            </ul>
+          </div>
+
+          <div class="topper-card" style="border-color:rgba(255,45,135,.16);">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--pink);border-radius:0 2px 2px 0;"></div>
+            <div class="tc-head">
+              <div class="tc-icon">🧠</div>
+              <div><div class="tc-title">CONCEPTS FIRST, PROBLEMS SECOND</div><div class="tc-sub">Topper methodology</div></div>
+            </div>
+            <ul class="tc-body">
+              <li>Never jump to PYQs without clearing theory. It will backfire.</li>
+              <li>Standard References: CLRS (Algorithms), Tanenbaum (OS/Networks).</li>
+              <li>Write handwritten notes — GATE toppers unanimously agree on this.</li>
+              <li>Revise each subject 3 times: overview → deep → flash review.</li>
+            </ul>
+          </div>
+
+          <div class="topper-card" style="border-color:rgba(255,184,0,.16);">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);border-radius:0 2px 2px 0;"></div>
+            <div class="tc-head">
+              <div class="tc-icon">⏰</div>
+              <div><div class="tc-title">TIME IS YOUR ONLY WEAPON</div><div class="tc-sub">Discipline over talent</div></div>
+            </div>
+            <ul class="tc-body">
+              <li>9.5 hours of FOCUSED study daily beats 14 hours of distracted effort.</li>
+              <li>Protect your Study Block III at all costs — afternoon is where rank is decided.</li>
+              <li>Phone in another room during study blocks. Non-negotiable.</li>
+              <li>Sleep 7–8 hrs. Memory consolidates only during deep sleep.</li>
+            </ul>
+          </div>
+
+          <div class="topper-card" style="border-color:rgba(0,229,160,.16);">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--green);border-radius:0 2px 2px 0;"></div>
+            <div class="tc-head">
+              <div class="tc-icon">📊</div>
+              <div><div class="tc-title">MOCK TESTS = RANK</div><div class="tc-sub">Last 60 days strategy</div></div>
+            </div>
+            <ul class="tc-body">
+              <li>Give full-length mocks in real exam conditions from Month 4 onwards.</li>
+              <li>Analyse every test: error log, time per question, weak sections.</li>
+              <li>Target 55+ in mocks before the real exam. Cut-off for AIR &lt;100 is ~65.</li>
+              <li>Don't start new topics in the last 3 weeks. Only revise.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Subject Priority -->
+        <div class="strategy-section">
+          <div class="strategy-section-hdr">SUBJECT PRIORITY MATRIX</div>
+          <div class="subject-priority-grid" id="priority-grid"></div>
+          <div style="font-size:10px;color:var(--muted);font-style:italic;padding:0 2px;">Weightages based on GATE CS 2019–2024 paper analysis.</div>
+        </div>
+
+        <!-- Study Phases -->
+        <div class="strategy-section">
+          <div class="strategy-section-hdr">PREPARATION PHASES</div>
+          <div class="chart-card">
+            <div class="phase-timeline" id="phase-timeline"></div>
+          </div>
+        </div>
+
+        <!-- Daily Habits -->
+        <div class="strategy-section">
+          <div class="strategy-section-hdr">ELITE DAILY HABITS</div>
+          <div id="habits-container"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══ STATS TAB ═══ -->
+    <div id="tab-stats" class="tab-pane">
+      <div class="tab-pad">
+        <div class="section-hdr">YOUR PRODUCTIVITY</div>
+
+        <!-- Rings -->
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <div class="stat-card" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 4px;">
+            <div class="ring-wrap">
+              <svg width="60" height="60"><circle cx="30" cy="30" r="24" fill="none" stroke="var(--bg3)" stroke-width="5"/><circle id="rg-today" cx="30" cy="30" r="24" fill="none" stroke="var(--study)" stroke-width="5" stroke-dasharray="0 151" stroke-linecap="round"/></svg>
+              <div class="ring-inner"><div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--study);" id="rv-today"></div></div>
+            </div>
+            <div class="stat-lbl">TODAY</div>
+          </div>
+          <div class="stat-card" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 4px;">
+            <div class="ring-wrap">
+              <svg width="60" height="60"><circle cx="30" cy="30" r="24" fill="none" stroke="var(--bg3)" stroke-width="5"/><circle id="rg-week" cx="30" cy="30" r="24" fill="none" stroke="var(--pyq)" stroke-width="5" stroke-dasharray="0 151" stroke-linecap="round"/></svg>
+              <div class="ring-inner"><div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--pyq);" id="rv-week"></div></div>
+            </div>
+            <div class="stat-lbl">WEEK AVG</div>
+          </div>
+          <div class="stat-card" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 4px;">
+            <div class="ring-wrap">
+              <svg width="60" height="60"><circle cx="30" cy="30" r="24" fill="none" stroke="var(--bg3)" stroke-width="5"/><circle id="rg-ready" cx="30" cy="30" r="24" fill="none" stroke="var(--green)" stroke-width="5" stroke-dasharray="0 151" stroke-linecap="round"/></svg>
+              <div class="ring-inner"><div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--green);" id="rv-ready"></div></div>
+            </div>
+            <div class="stat-lbl">READINESS</div>
+          </div>
+        </div>
+
+        <!-- Big 6 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div class="stat-card"><div class="stat-val" id="s-totalxp" style="color:var(--gold);"></div><div class="stat-lbl">TOTAL XP</div></div>
+          <div class="stat-card"><div class="stat-val" id="s-days" style="color:var(--study);"></div><div class="stat-lbl">DAYS LOGGED</div></div>
+          <div class="stat-card"><div class="stat-val" id="s-studyhrs" style="color:var(--study);"></div><div class="stat-lbl">STUDY HOURS</div></div>
+          <div class="stat-card"><div class="stat-val" id="s-pyqhrs" style="color:var(--pyq);"></div><div class="stat-lbl">PYQ HOURS</div></div>
+          <div class="stat-card"><div class="stat-val" id="s-perfect" style="color:var(--gold);"></div><div class="stat-lbl">PERFECT DAYS</div></div>
+          <div class="stat-card"><div class="stat-val" id="s-beststreak" style="color:var(--warm);"></div><div class="stat-lbl">BEST STREAK</div></div>
+        </div>
+
+        <!-- 7-day XP -->
+        <div class="chart-card">
+          <div class="chart-title">7-DAY XP EARNED</div>
+          <div class="bars" id="ch-7xp"></div>
+        </div>
+
+        <!-- 14-day completion -->
+        <div class="chart-card">
+          <div class="chart-title">14-DAY BLOCK COMPLETION</div>
+          <div class="bars" id="ch-14comp"></div>
+        </div>
+
+        <!-- Study vs PYQ -->
+        <div class="chart-card">
+          <div class="chart-title">STUDY vs PYQ HOURS — 7 DAYS</div>
+          <div class="bars" id="ch-breakdown"></div>
+          <div style="display:flex;gap:14px;margin-top:9px;">
+            <div style="display:flex;align-items:center;gap:5px;"><div style="width:8px;height:8px;border-radius:2px;background:var(--study);"></div><div style="font-size:8px;color:var(--muted);">STUDY</div></div>
+            <div style="display:flex;align-items:center;gap:5px;"><div style="width:8px;height:8px;border-radius:2px;background:var(--pyq);"></div><div style="font-size:8px;color:var(--muted);">PYQ</div></div>
+          </div>
+        </div>
+
+        <!-- Subject breakdown -->
+        <div class="chart-card">
+          <div class="chart-title">SUBJECT TIME DISTRIBUTION</div>
+          <div id="subject-stats-container">
+            <div style="font-size:11px;color:var(--muted);font-style:italic;text-align:center;padding:16px 0;">Tag study blocks with subjects to see distribution</div>
+          </div>
+        </div>
+
+        <!-- Heatmap -->
+        <div class="chart-card">
+          <div class="chart-title">28-DAY ACTIVITY HEATMAP</div>
+          <div style="display:flex;margin-bottom:5px;">
+            <div class="hm-dl">M</div><div class="hm-dl">T</div><div class="hm-dl">W</div>
+            <div class="hm-dl">T</div><div class="hm-dl">F</div><div class="hm-dl">S</div><div class="hm-dl">S</div>
+          </div>
+          <div class="heatmap" id="heatmap"></div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:9px;justify-content:flex-end;">
+            <div style="font-size:7px;color:var(--muted);">LESS</div>
+            <div style="width:9px;height:9px;border-radius:2px;background:#182030;"></div>
+            <div style="width:9px;height:9px;border-radius:2px;background:#1a4030;"></div>
+            <div style="width:9px;height:9px;border-radius:2px;background:rgba(0,229,160,.4);"></div>
+            <div style="width:9px;height:9px;border-radius:2px;background:var(--study);"></div>
+            <div style="width:9px;height:9px;border-radius:2px;background:var(--pyq);"></div>
+            <div style="font-size:7px;color:var(--muted);">MORE</div>
+          </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="chart-card">
+          <div class="chart-title">ACHIEVEMENTS</div>
+          <div class="ach-grid" id="ach-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ LOG TAB ═══ -->
+    <div id="tab-log" class="tab-pane">
+      <div class="tab-pad">
+        <div class="section-hdr">BATTLE RECORD</div>
+        <div id="log-container"></div>
+      </div>
+    </div>
+
+    <!-- ═══ RANK TAB ═══ -->
+    <div id="tab-rank" class="tab-pane">
+      <div class="tab-pad">
+        <div id="rank-hero-card" class="rank-hero-card"></div>
+        <div class="chart-card" style="margin-bottom:12px;">
+          <div class="chart-title">RANK LADDER</div>
+          <div id="rank-ladder"></div>
+        </div>
+        <div style="padding:14px;background:rgba(255,45,135,.04);border:1px solid rgba(255,45,135,.14);border-radius:var(--radius-xl);margin-bottom:14px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:9px;color:var(--pyq);letter-spacing:5px;margin-bottom:11px;">YOUR DAILY CONTRACT</div>
+          <div id="contract-list"></div>
+          <div style="margin-top:13px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;background:linear-gradient(90deg,var(--pyq),var(--study));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">9.5 HOURS. EVERY DAY. NO EXCUSES.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SETTINGS TAB ═══ -->
+    <div id="tab-settings" class="tab-pane">
+      <div class="tab-pad">
+
+        <div class="settings-section">
+          <div class="settings-section-title">PROFILE</div>
+          <div class="settings-row">
+            <div><div class="settings-label">Your Name</div><div class="settings-sub" id="profile-name-display"></div></div>
+            <input id="profile-name-input"
+              style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;width:100px;text-align:right;"
+              placeholder="Name" oninput="updateName(this.value)" autocomplete="off"/>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-label">GATE Exam Date</div><div class="settings-sub" id="exam-date-display"></div></div>
+            <input id="exam-date-input" type="date"
+              style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;"
+              oninput="updateExamDate(this.value)"/>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">WEEKLY XP GOAL</div>
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
+            <div style="display:flex;width:100%;justify-content:space-between;align-items:center;">
+              <div class="settings-label">Target XP / week</div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--warm);" id="goal-display"></div>
+            </div>
+            <input type="range" id="goal-slider" min="2000" max="10000" step="500"
+              style="width:100%;accent-color:var(--warm);" oninput="updateGoal(this.value)"/>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">PREFERENCES</div>
+          <div class="settings-row">
+            <div><div class="settings-label">🔊 Sound Effects</div><div class="settings-sub">Completion &amp; rank-up sounds</div></div>
+            <div class="toggle" id="tog-sound" onclick="toggleSetting('sound')"></div>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-label">📳 Vibration</div><div class="settings-sub">Haptic feedback on actions</div></div>
+            <div class="toggle" id="tog-vibrate" onclick="toggleSetting('vibrate')"></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">STREAK PROTECTION</div>
+          <div class="settings-row">
+            <div><div class="settings-label">🛡 Streak Freeze</div><div class="settings-sub" id="freeze-sub">Protects streak for 1 missed day</div></div>
+            <button class="btn-base btn-done" id="freeze-btn" onclick="useStreakFreeze()" style="padding:7px 12px;">USE</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">DATA</div>
+          <button class="action-btn success" onclick="exportData()">⬆ EXPORT BACKUP</button>
+          <button class="action-btn" onclick="importData()">⬇ IMPORT BACKUP</button>
+          <input type="file" id="import-file" accept=".json" style="display:none;" onchange="handleImport(this)"/>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">DANGER ZONE</div>
+          <button class="action-btn danger" onclick="confirmReset()">🗑 RESET ALL DATA</button>
+        </div>
+
+        <div style="text-align:center;padding:22px 0 10px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:4px;color:var(--muted);">GATE GRIND v5.0 · ELITE EDITION</div>
+          <div style="font-size:10px;color:var(--dim);margin-top:6px;font-style:italic;">Built for the 1%. Are you the 1%?</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /scroll-area -->
+
+  <!-- BOTTOM NAV -->
+  <div id="nav">
+    <button class="nav-btn active" id="nav-today"    onclick="switchTab('today')">   <span class="nav-icon">⚔️</span>TODAY</button>
+    <button class="nav-btn"        id="nav-strategy" onclick="switchTab('strategy')"><span class="nav-icon">🗺</span>STRATEGY</button>
+    <button class="nav-btn"        id="nav-stats"    onclick="switchTab('stats')">   <span class="nav-icon">📊</span>STATS</button>
+    <button class="nav-btn"        id="nav-log"      onclick="switchTab('log')">     <span class="nav-icon">📜</span>LOG</button>
+    <button class="nav-btn"        id="nav-rank"     onclick="switchTab('rank')">    <span class="nav-icon">👑</span>RANK</button>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+"use strict";
+
+/* ── CONSTANTS ──────────────────────────────────────── */
+const BLOCKS=[
+  {id:"wake",  emoji:"🌅",label:"Wake Up & Freshen",  time:"6:30–7:00 AM",  type:"routine",xp:40, color:"#FF8C42",hours:.5,   tip:"Rise before the world. Water, wash, sit up straight. No phone for 30 minutes."},
+  {id:"s1",    emoji:"📘",label:"Study Block I",       time:"7:00–9:00 AM",  type:"study",  xp:120,color:"#00C8FF",hours:2,    tip:"Freshest mind of the day. New concepts only. Deep focus mode. No distractions."},
+  {id:"b1",    emoji:"☕",label:"Break",               time:"9:00–9:30 AM",  type:"break",  xp:20, color:"#6B7280",hours:.5,   tip:"Eat light. Walk 5 mins. No social media. Reset your mind and return stronger."},
+  {id:"s2",    emoji:"📗",label:"Study Block II",      time:"9:30–1:00 PM",  type:"study",  xp:210,color:"#00C8FF",hours:3.5,  tip:"Your BIGGEST block. 3.5 hours. Protect it with your life. Phone off."},
+  {id:"b2",    emoji:"🍱",label:"Lunch Break",         time:"1:00–2:00 PM",  type:"break",  xp:20, color:"#6B7280",hours:1,    tip:"Eat well. Rest your eyes. Short walk. Review morning topics mentally."},
+  {id:"s3",    emoji:"📙",label:"Study Block III",     time:"2:00–6:00 PM",  type:"study",  xp:240,color:"#00C8FF",hours:4,    tip:"Hardest slot. Afternoon dip is real. Your discipline decides everything here."},
+  {id:"p1",    emoji:"⚡",label:"PYQ Solving",         time:"6:00–8:00 PM",  type:"pyq",    xp:150,color:"#FF2D87",hours:2,    tip:"Timer on. Exam conditions. Analyse every wrong answer thoroughly. No shortcuts."},
+  {id:"b3",    emoji:"🍽",label:"Dinner & Unwind",     time:"8:00–9:00 PM",  type:"break",  xp:20, color:"#6B7280",hours:1,    tip:"Eat well. Breathe. Mental review of the day. No heavy content tonight."},
+  {id:"p2",    emoji:"🔥",label:"Night PYQ Sprint",    time:"9:00–11:00 PM", type:"pyq",    xp:150,color:"#FF2D87",hours:2,    tip:"End strong. Mixed subject questions. Build real exam stamina and speed."},
+  {id:"sleep", emoji:"😴",label:"Sleep",               time:"11:00 PM",      type:"routine",xp:60, color:"#9B5FFF",hours:7.5,  tip:"Memory consolidates during sleep. 7.5 hours. This is not optional."},
+];
+const TOTAL_DAY_XP=BLOCKS.reduce((a,b)=>a+b.xp,0);
+const STUDY_HRS   =BLOCKS.filter(b=>b.type==="study").reduce((a,b)=>a+b.hours,0);
+const PYQ_HRS     =BLOCKS.filter(b=>b.type==="pyq").reduce((a,b)=>a+b.hours,0);
+
+const RANKS=[
+  {name:"SLEEPING",    min:0,    color:"#555",   emoji:"💤",desc:"The journey hasn't started."},
+  {name:"WAKING UP",   min:500,  color:"#A0785A",emoji:"🌱",desc:"Foundation is forming."},
+  {name:"STUDENT",     min:1500, color:"#8B8FA8",emoji:"📚",desc:"Showing up consistently."},
+  {name:"GRINDER",     min:3500, color:"#00C8FF",emoji:"⚙️",desc:"The machine is running."},
+  {name:"WARRIOR",     min:7000, color:"#FF8C42",emoji:"⚔️",desc:"Others quit. You didn't."},
+  {name:"GATE BEAST",  min:14000,color:"#FF2D87",emoji:"🏹",desc:"Top percentile material."},
+  {name:"AIR MATERIAL",min:28000,color:"#FFB800",emoji:"👑",desc:"You ARE the standard."},
+];
+
+/* DSA replaces SoftEng — as requested */
+const GATE_SUBJECTS=["Maths","Aptitude","Networks","OS","DBMS","Algorithms","Digital Logic","Arch","TOC","Compiler","DSA","C/C++"];
+
+const ACHIEVEMENTS=[
+  {id:"first_blood",  icon:"🩸",name:"FIRST BLOOD",   desc:"Complete your first block",      check:s=>s.totalXP>0},
+  {id:"early_bird",   icon:"🌅",name:"EARLY BIRD",    desc:"Wake Up done 7 days",            check:s=>daysWithBlock(s,"wake")>=7},
+  {id:"perfect_day",  icon:"🏆",name:"PERFECT DAY",   desc:"All 10 blocks in one day",       check:s=>perfectCount(s)>=1},
+  {id:"pyq_hunter",   icon:"⚡",name:"PYQ HUNTER",    desc:"Both PYQ blocks done 10 days",   check:s=>daysWithBothPYQ(s)>=10},
+  {id:"iron_mind",    icon:"🧠",name:"IRON MIND",     desc:"Study Block III done 14 days",   check:s=>daysWithBlock(s,"s3")>=14},
+  {id:"night_owl",    icon:"🦉",name:"NIGHT OWL",     desc:"Night PYQ done 21 days",         check:s=>daysWithBlock(s,"p2")>=21},
+  {id:"week_warrior", icon:"🗡",name:"WEEK WARRIOR",  desc:"7-day streak achieved",          check:s=>s.streak>=7},
+  {id:"streak_30",    icon:"🔥",name:"30-DAY LEGEND", desc:"30-day streak",                  check:s=>s.streak>=30||s.bestStreak>=30},
+  {id:"streak_100",   icon:"💯",name:"CENTURY",       desc:"100-day streak",                 check:s=>s.streak>=100||s.bestStreak>=100},
+  {id:"xp_5000",      icon:"⭐",name:"XP ELITE",      desc:"5,000 total XP earned",          check:s=>s.totalXP>=5000},
+  {id:"xp_15000",     icon:"🌟",name:"XP MASTER",     desc:"15,000 total XP earned",         check:s=>s.totalXP>=15000},
+  {id:"perfect_week", icon:"👑",name:"PERFECT WEEK",  desc:"7 perfect days",                 check:s=>perfectCount(s)>=7},
+];
+
+const WEEKLY_CHALLENGES_POOL=[
+  {id:"c_perfect3", icon:"🏆",name:"TRIPLE CROWN",     desc:"Complete 3 perfect days this week", target:3,xp:300,track:(h,keys)=>keys.filter(k=>(h[k]||[]).length===BLOCKS.length).length},
+  {id:"c_pyqboth5", icon:"⚡",name:"PYQ MACHINE",       desc:"Do both PYQ blocks 5 days",         target:5,xp:250,track:(h,keys)=>keys.filter(k=>(h[k]||[]).includes("p1")&&(h[k]||[]).includes("p2")).length},
+  {id:"c_study5",   icon:"📘",name:"STUDY BEAST",       desc:"Complete Study Block I 6 days",     target:6,xp:200,track:(h,keys)=>keys.filter(k=>(h[k]||[]).includes("s1")).length},
+  {id:"c_s3_5",     icon:"📙",name:"AFTERNOON WARRIOR", desc:"Complete Study Block III 5 days",   target:5,xp:220,track:(h,keys)=>keys.filter(k=>(h[k]||[]).includes("s3")).length},
+  {id:"c_sleep5",   icon:"😴",name:"SLEEP DISCIPLINE",  desc:"Sleep on time 6 days",              target:6,xp:150,track:(h,keys)=>keys.filter(k=>(h[k]||[]).includes("sleep")).length},
+  {id:"c_blocks7",  icon:"🔥",name:"7-BLOCK DAYS",      desc:"Complete 7+ blocks for 4 days",     target:4,xp:280,track:(h,keys)=>keys.filter(k=>(h[k]||[]).length>=7).length},
+  {id:"c_allbreaks",icon:"☕",name:"REST MASTER",        desc:"Take all breaks 5 days",            target:5,xp:120,track:(h,keys)=>keys.filter(k=>(h[k]||[]).includes("b1")&&(h[k]||[]).includes("b2")&&(h[k]||[]).includes("b3")).length},
+  {id:"c_earlywake",icon:"🌅",name:"EARLY RISER WEEK",  desc:"Wake Up block done all 7 days",     target:7,xp:350,track:(h,keys)=>keys.filter(k=>(h[k]||[]).includes("wake")).length},
+];
+
+const Q_MORNING   =["The battle begins. 9.5 hours ahead. Claim every second.","Your first block sets the tone. Make it ruthless.","GATE toppers were once in your position. They chose not to waste a minute. Will you?"];
+const Q_AFTERNOON =["Afternoon slump is real. Your discipline is more real.","The afternoon is where ordinary students stop. You don't stop.","Every concept you master right now is a mark in the exam hall."];
+const Q_EVENING   =["PYQ time. This is where rank is decided. Solve with intent.","Analyse every wrong answer. That's where growth lives.","End the day strong. Sleep like a champion. Repeat tomorrow."];
+
+/* ── STRATEGY CONTENT DATA ──────────────────────────── */
+const SUBJECT_PRIORITIES=[
+  {name:"Algorithms",weight:"12–15 marks",level:"CRITICAL",color:"#FF2D87",badge:"bg:rgba(255,45,135,.12);color:#FF2D87;"},
+  {name:"DSA",        weight:"8–12 marks", level:"CRITICAL",color:"#FF2D87",badge:"bg:rgba(255,45,135,.12);color:#FF2D87;"},
+  {name:"Maths",      weight:"13–15 marks",level:"CRITICAL",color:"#FFB800",badge:"bg:rgba(255,184,0,.12);color:#FFB800;"},
+  {name:"Networks",   weight:"10–12 marks",level:"HIGH",    color:"#00C8FF",badge:"bg:rgba(0,200,255,.1);color:#00C8FF;"},
+  {name:"OS",         weight:"8–12 marks", level:"HIGH",    color:"#00C8FF",badge:"bg:rgba(0,200,255,.1);color:#00C8FF;"},
+  {name:"DBMS",       weight:"8–10 marks", level:"HIGH",    color:"#00E5A0",badge:"bg:rgba(0,229,160,.1);color:#00E5A0;"},
+  {name:"TOC",        weight:"6–8 marks",  level:"MEDIUM",  color:"#9B5FFF",badge:"bg:rgba(155,95,255,.1);color:#9B5FFF;"},
+  {name:"Compiler",   weight:"5–7 marks",  level:"MEDIUM",  color:"#9B5FFF",badge:"bg:rgba(155,95,255,.1);color:#9B5FFF;"},
+  {name:"Aptitude",   weight:"15 marks",   level:"FIXED",   color:"#FF8C42",badge:"bg:rgba(255,140,66,.1);color:#FF8C42;"},
+  {name:"Digital Logic",weight:"5–7 marks",level:"MEDIUM",  color:"#7A8496",badge:"bg:rgba(122,132,150,.1);color:#7A8496;"},
+  {name:"Arch",       weight:"4–6 marks",  level:"MEDIUM",  color:"#7A8496",badge:"bg:rgba(122,132,150,.1);color:#7A8496;"},
+  {name:"C/C++",      weight:"5–7 marks",  level:"MEDIUM",  color:"#7A8496",badge:"bg:rgba(122,132,150,.1);color:#7A8496;"},
+];
+
+const PHASES=[
+  {dot:"📐",color:"#00C8FF",bg:"rgba(0,200,255,.08)",border:"rgba(0,200,255,.25)",title:"PHASE 1 — FOUNDATION (Months 1–2)",desc:"Build strong conceptual clarity. Cover all subjects once. Write handwritten notes. Don't attempt PYQs yet. Understand, don't memorise."},
+  {dot:"⚙️",color:"#FF8C42",bg:"rgba(255,140,66,.08)",border:"rgba(255,140,66,.25)",title:"PHASE 2 — DEEP DIVE (Months 2–3)",desc:"Subject-wise PYQ practice. Solve 10+ years per subject. Identify weak areas. Build subject-wise revision notes. Target 60–70% accuracy."},
+  {dot:"🔥",color:"#FF2D87",bg:"rgba(255,45,135,.08)",border:"rgba(255,45,135,.25)",title:"PHASE 3 — MOCK BATTLES (Month 4)",desc:"Full-length mock tests in real exam conditions. 2 mocks per week minimum. Deep error analysis. Time management drills. Stop new topics."},
+  {dot:"⚡",color:"#FFB800",bg:"rgba(255,184,0,.08)",border:"rgba(255,184,0,.25)",title:"PHASE 4 — FINAL REVISION (Last 3 Weeks)",desc:"Rapid revision of all notes. Formula sheets. Previous year papers in timed mode. Stay consistent, sleep well. Trust your preparation."},
+];
+
+const HABITS=[
+  {icon:"🌅",title:"Morning cold water",desc:"Within 5 min of waking. Activates the nervous system for focus."},
+  {icon:"📵",title:"Phone-free study blocks",desc:"Device in another room. Every check costs 23 min of focus."},
+  {icon:"✍️",title:"Handwritten summaries",desc:"End each study block with 5 min of note consolidation."},
+  {icon:"😴",title:"Consistent sleep schedule",desc:"Same time every night. Sleep debt kills retention."},
+  {icon:"🚶",title:"Walk between blocks",desc:"5-min walk after every major block. Resets cortisol."},
+  {icon:"📊",title:"Weekly self-review",desc:"Every Sunday: what worked, what didn't, what to adjust."},
+];
+
+/* ── HELPERS ────────────────────────────────────────── */
+function getToday(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function getWeekKey(){
+  const d=new Date();const dow=d.getDay()||7;const m=new Date(d);
+  m.setDate(d.getDate()-(dow-1));
+  return `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,"0")}-${String(m.getDate()).padStart(2,"0")}`;
+}
+function getLast7Days(){
+  return Array.from({length:7},(_,i)=>{
+    const d=new Date();d.setDate(d.getDate()-(6-i));
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  });
+}
+function getLast14Days(){
+  return Array.from({length:14},(_,i)=>{
+    const d=new Date();d.setDate(d.getDate()-(13-i));
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  });
+}
+function getLast28Days(){
+  return Array.from({length:28},(_,i)=>{
+    const d=new Date();d.setDate(d.getDate()-(27-i));
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  });
+}
+function getThisWeekDays(){
+  const today=new Date();const dow=today.getDay()||7;const days=[];
+  for(let i=1;i<=dow;i++){
+    const d=new Date(today);d.setDate(today.getDate()-(dow-i));
+    days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`);
+  }
+  return days;
+}
+function getRank(xp){return RANKS.reduce((r,c)=>xp>=c.min?c:r,RANKS[0]);}
+function getNextRank(xp){return RANKS.find(r=>xp<r.min)||null;}
+function daysWithBlock(s,id){return Object.keys(s.history||{}).filter(k=>k.length===10&&(s.history[k]||[]).includes(id)).length;}
+function daysWithBothPYQ(s){return Object.keys(s.history||{}).filter(k=>k.length===10&&(s.history[k]||[]).includes("p1")&&(s.history[k]||[]).includes("p2")).length;}
+function perfectCount(s){return Object.keys(s.history||{}).filter(k=>k.length===10&&(s.history[k]||[]).length===BLOCKS.length).length;}
+function p2(n){return String(n).padStart(2,"0");}
+function fmtTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return h>0?`${h}:${p2(m)}:${p2(ss)}`:`${p2(m)}:${p2(ss)}`;}
+
+/* ── STATE ──────────────────────────────────────────── */
+let totalXP=0,streak=0,bestStreak=0,lastActiveDay="";
+let todayKey=getToday(),todayDone=[],todayNotes={},todaySubjects={};
+let history={},historySubjects={},historyNotes={};
+let achievements=[];
+let streakFreezes=1,lastFreezeWeek="";
+let settings={sound:true,vibrate:true};
+let weeklyGoalXP=7000;
+let userName="",examDate="";
+let onboardingDone=false;
+let weekChallengeIds=[],weekChallengesWeek="";
+let pomoMode="full";
+let timerState=null,timerInterval=null;
+let quoteIdx=0,obStep=0;
+
+/* ── STORAGE ────────────────────────────────────────── */
+const SK="gate_grind_v5";
+const SK_LEGACY=["gate_grind_v4","gate_grind_v3"];
+
+function load(){
+  // Try current version first
+  try{
+    const raw=localStorage.getItem(SK);
+    if(raw){const d=JSON.parse(raw);if(d&&typeof d==="object")return d;}
+  }catch(e){}
+  // Migrate from legacy versions
+  for(const oldKey of SK_LEGACY){
+    try{
+      const old=localStorage.getItem(oldKey);
+      if(!old)continue;
+      const s=JSON.parse(old);
+      if(!s||typeof s!=="object")continue;
+      // Remove AI-specific keys that are no longer needed
+      delete s.apiKey;
+      delete s.chatHistory;
+      delete s.weekChallenges;
+      if(s.totalXP>0||s.streak>0||(s.history&&Object.keys(s.history).length>0)){s.onboardingDone=true;}
+      if(!s.weekChallengeIds)s.weekChallengeIds=[];
+      if(!s.weekChallengesWeek)s.weekChallengesWeek="";
+      localStorage.setItem(SK,JSON.stringify(s));
+      localStorage.removeItem(oldKey);
+      return s;
+    }catch(e){continue;}
+  }
+  return null;
+}
+
+function save(){
+  try{
+    localStorage.setItem(SK,JSON.stringify({
+      totalXP,streak,bestStreak,lastActiveDay,
+      todayKey,todayDone,todayNotes,todaySubjects,
+      history,historySubjects,historyNotes,
+      achievements,streakFreezes,lastFreezeWeek,
+      settings,weeklyGoalXP,
+      userName,examDate,
+      weekChallengeIds,weekChallengesWeek,
+      onboardingDone
+    }));
+  }catch(e){console.warn("Save failed:",e);}
+}
+
+/* ── BOOT ───────────────────────────────────────────── */
+(function boot(){
+  const d=load();
+  if(d){
+    totalXP       =d.totalXP||0;
+    streak        =d.streak||0;
+    bestStreak    =d.bestStreak||0;
+    lastActiveDay =d.lastActiveDay||"";
+    todayKey      =d.todayKey||getToday();
+    todayDone     =Array.isArray(d.todayDone)?d.todayDone:[];
+    todayNotes    =d.todayNotes&&typeof d.todayNotes==="object"?d.todayNotes:{};
+    todaySubjects =d.todaySubjects&&typeof d.todaySubjects==="object"?d.todaySubjects:{};
+    history       =d.history&&typeof d.history==="object"?d.history:{};
+    historySubjects=d.historySubjects&&typeof d.historySubjects==="object"?d.historySubjects:{};
+    historyNotes  =d.historyNotes&&typeof d.historyNotes==="object"?d.historyNotes:{};
+    achievements  =Array.isArray(d.achievements)?d.achievements:[];
+    streakFreezes =d.streakFreezes!=null?d.streakFreezes:1;
+    lastFreezeWeek=d.lastFreezeWeek||"";
+    settings      =Object.assign({sound:true,vibrate:true},d.settings||{});
+    weeklyGoalXP  =d.weeklyGoalXP||7000;
+    userName      =d.userName||"";
+    examDate      =d.examDate||"";
+    weekChallengeIds=Array.isArray(d.weekChallengeIds)?d.weekChallengeIds:[];
+    weekChallengesWeek=d.weekChallengesWeek||"";
+    onboardingDone=!!d.onboardingDone;
+
+    // Day rollover check on boot
+    if(todayKey!==getToday()){
+      const prev=new Date(todayKey);const now=new Date(getToday());
+      const diff=Math.round((now-prev)/86400000);
+      if(diff>1){
+        if(streakFreezes===-1)streakFreezes=0;
+        else streak=0;
+      }
+      todayKey=getToday();todayDone=[];todayNotes={};todaySubjects={};
+      history[todayKey]=[];
+    }
+    // Weekly freeze reset
+    const wk=getWeekKey();
+    if(lastFreezeWeek!==wk){streakFreezes=1;lastFreezeWeek=wk;}
+    if(weekChallengesWeek!==wk)generateWeeklyChallenges();
+  }
+
+  // Splash → onboarding or main
+  setTimeout(()=>{
+    document.getElementById("splash").classList.add("out");
+    setTimeout(()=>{
+      if(!onboardingDone&&!d){
+        showOnboarding();
+      }else{
+        initApp();
+      }
+    },700);
+  },1800);
+})();
+
+/* ── ONBOARDING ─────────────────────────────────────── */
+const OB_STEPS=3;
+function showOnboarding(){
+  const ob=document.getElementById("onboarding");
+  ob.classList.add("show");
+  const dots=document.getElementById("ob-dots");
+  dots.innerHTML="";
+  for(let i=0;i<OB_STEPS;i++){
+    const d=document.createElement("div");
+    d.className="ob-dot"+(i===0?" active":"");
+    d.id="ob-dot-"+i;
+    dots.appendChild(d);
+  }
+  obStep=0;
+  updateObStep();
+}
+
+function updateObStep(){
+  for(let i=0;i<OB_STEPS;i++){
+    const s=document.getElementById("ob-step-"+i);
+    const dot=document.getElementById("ob-dot-"+i);
+    if(s)s.className="ob-step"+(i===obStep?" active":"");
+    if(dot)dot.className="ob-dot"+(i===obStep?" active":"");
+  }
+}
+
+function nextStep(){
+  if(obStep===1){
+    const n=(document.getElementById("ob-name").value||"").trim();
+    if(n)userName=n;
+  }
+  obStep++;
+  if(obStep>=OB_STEPS){finishOnboarding();return;}
+  updateObStep();
+}
+
+function finishOnboarding(){
+  const ed=document.getElementById("ob-exam-date");
+  if(ed&&ed.value)examDate=ed.value;
+  onboardingDone=true;
+  save();
+  document.getElementById("onboarding").classList.remove("show");
+  initApp();
+}
+
+/* ── INIT ───────────────────────────────────────────── */
+function initApp(){
+  renderAll();
+  applySettings();
+  startQuotes();
+  renderInsight();
+  renderStrategy();
+  startMidnightCheck();
+  document.addEventListener("DOMContentLoaded",()=>setPomoMode("full"));
+}
+
+/* ── RENDER ALL ─────────────────────────────────────── */
+function renderAll(){
+  renderHeader();
+  renderBlocks();
+  renderChallenges();
+  updatePerfectBanner();
+}
+
+/* ── HEADER ─────────────────────────────────────────── */
+function renderHeader(){
+  const h=new Date().getHours();
+  const greetings=["GOOD NIGHT,","GOOD MORNING,","GOOD AFTERNOON,","GOOD EVENING,"];
+  const g=h<5?greetings[0]:h<12?greetings[1]:h<17?greetings[2]:greetings[3];
+  document.getElementById("greeting").textContent=g;
+  document.getElementById("user-name-display").textContent=(userName||"WARRIOR").toUpperCase();
+
+  // Streak
+  const sp=document.getElementById("streak-pill");
+  document.getElementById("streak-val").textContent=streak;
+  const fi=document.getElementById("flame-icon");
+  if(streak>=7){fi.classList.add("flame-anim");sp.classList.add("active");}
+  else{fi.classList.remove("flame-anim");sp.classList.remove("active");}
+
+  // Countdown
+  if(examDate){
+    const now=new Date();const ed=new Date(examDate);
+    const diffMs=ed-now;
+    const cd=document.getElementById("exam-countdown");
+    if(diffMs>0){
+      const days=Math.ceil(diffMs/86400000);
+      cd.textContent=`${days} DAYS TO GATE · ${ed.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}`;
+      cd.style.display="block";
+    }else{
+      cd.textContent="GATE EXAM PASSED · RESULTS PENDING";
+      cd.style.display="block";
+    }
+  }else{
+    document.getElementById("exam-countdown").style.display="none";
+  }
+
+  // Readiness
+  const{score,insight,color}=computeReadiness();
+  const rf=document.getElementById("readiness-fill");
+  rf.style.width=score+"%";
+  const rCol=score>=80?var_green:score>=60?var_blue:score>=40?var_warm:score>=20?"#FF8C42":var_muted;
+  rf.style.background=`linear-gradient(90deg,${rCol}cc,${rCol})`;
+  rf.style.boxShadow=`0 0 8px ${rCol}66`;
+  const rs=document.getElementById("readiness-score");
+  rs.textContent=score+"%";
+  rs.style.color=rCol;
+  document.getElementById("readiness-insight").textContent=insight;
+
+  // Rank
+  const rank=getRank(totalXP);
+  const next=getNextRank(totalXP);
+  const xpIntoRank=totalXP-rank.min;
+  const xpForNext=next?next.min-rank.min:1;
+  const xpPct=(xpForNext>0?(xpIntoRank/xpForNext)*100:100);
+
+  // Mini stats
+  const sH=BLOCKS.filter(b=>b.type==="study"&&todayDone.includes(b.id)).reduce((a,b)=>a+b.hours,0);
+  const pH=BLOCKS.filter(b=>b.type==="pyq"  &&todayDone.includes(b.id)).reduce((a,b)=>a+b.hours,0);
+  const tXP=todayDone.reduce((a,id)=>{const b=BLOCKS.find(x=>x.id===id);return a+(b?b.xp:0);},0);
+  document.getElementById("hdr-study").textContent=sH+"/"+STUDY_HRS+"h";
+  document.getElementById("hdr-pyq").textContent=pH+"/"+PYQ_HRS+"h";
+  document.getElementById("hdr-blocks").textContent=todayDone.length+"/"+BLOCKS.length;
+  document.getElementById("hdr-xp").textContent="+"+tXP;
+
+  // Day progress
+  const dayPct=todayDone.length/BLOCKS.length*100;
+  document.getElementById("day-prog").style.width=dayPct+"%";
+  document.getElementById("day-pct").textContent=Math.round(dayPct)+"%";
+
+  // XP bar
+  document.getElementById("xp-val").textContent=totalXP.toLocaleString()+" XP";
+  document.getElementById("xp-next").textContent=next?`${(next.min-totalXP).toLocaleString()} → ${next.name}`:"MAX RANK";
+  const xb=document.getElementById("xp-bar");
+  xb.style.width=Math.min(xpPct,100)+"%";
+  xb.style.background=`linear-gradient(90deg,${rank.color}bb,${next?next.color:rank.color})`;
+  xb.style.boxShadow=`0 0 6px ${rank.color}88`;
+  document.documentElement.style.setProperty("--accent",rank.color);
+}
+
+// Cached color helpers (avoids repeated CSS var lookups)
+const var_blue="#00C8FF",var_green="#00E5A0",var_warm="#FF8C42",var_muted="#414958";
+
+/* ── READINESS ALGORITHM ────────────────────────────── */
+function computeReadiness(){
+  const days14=getLast14Days();
+  const validDays=days14.filter(k=>(history[k]||[]).length>0);
+  if(!validDays.length)return{score:0,insight:"Start your first day to generate your readiness score.",action:"Complete today's blocks",color:var_muted};
+
+  const streakFactor=Math.min(streak/21,1);
+  const consistencyFactor=days14.filter(k=>(history[k]||[]).length>=5).length/14;
+  const totalStudyActual=days14.reduce((a,k)=>a+BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.hours,0),0);
+  const studyFactor=Math.min(totalStudyActual/(STUDY_HRS*14),1);
+  const totalPYQActual=days14.reduce((a,k)=>a+BLOCKS.filter(b=>b.type==="pyq"&&(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.hours,0),0);
+  const pyqFactor=Math.min(totalPYQActual/(PYQ_HRS*14),1);
+  const perfectFactor=days14.filter(k=>(history[k]||[]).length===BLOCKS.length).length/14;
+  const first7=days14.slice(0,7),last7=days14.slice(7);
+  const f7avg=first7.reduce((a,k)=>a+(history[k]||[]).length,0)/7;
+  const l7avg=last7.reduce((a,k)=>a+(history[k]||[]).length,0)/7;
+  const trendFactor=Math.min((l7avg/Math.max(f7avg,.1))*.5,1);
+
+  const score=Math.round((streakFactor*.15+consistencyFactor*.25+studyFactor*.22+pyqFactor*.18+perfectFactor*.12+trendFactor*.08)*100);
+
+  let insight,action,color;
+  if(score>=80){insight="You are GATE-ready. Maintain this elite level.";action="Keep the streak alive";color=var_green;}
+  else if(score>=60){insight="Good progress. Need more consistency in study blocks.";action="Focus: Study Block III completion";color=var_blue;}
+  else if(score>=40){insight="Building foundation. PYQ hours need to increase.";action="Priority: Both PYQ blocks daily";color=var_warm;}
+  else if(score>=20){insight="Early stage. Consistency is key right now.";action="Goal: 5+ blocks every single day";color="#FF8C42";}
+  else{insight="Just starting. Every completed block counts.";action="Start: Complete today's blocks";color=var_muted;}
+
+  return{score,insight,action,color};
+}
+
+/* ── INSIGHTS ENGINE ────────────────────────────────── */
+function generateInsight(){
+  const days7=getLast7Days();const insights=[];
+  const blockRates={};
+  BLOCKS.forEach(b=>{blockRates[b.id]=days7.filter(k=>(history[k]||[]).includes(b.id)).length/7;});
+  const weakStudy=["s1","s2","s3"].sort((a,b)=>blockRates[a]-blockRates[b])[0];
+  const weakBlock=BLOCKS.find(b=>b.id===weakStudy);
+  if(blockRates[weakStudy]<.5)insights.push({icon:"⚠️",text:`${weakBlock.label} only done ${Math.round(blockRates[weakStudy]*100)}% of days. This is your biggest gap.`,action:"Fix this slot today"});
+  if(streak>=5)insights.push({icon:"🔥",text:`${streak}-day streak! You're in the top 5% of GATE aspirants for consistency.`,action:"Don't break it today"});
+  const pyqRate=(blockRates["p1"]+blockRates["p2"])/2;
+  if(pyqRate<.4)insights.push({icon:"📝",text:"PYQ completion is low. PYQ practice is 40% of GATE score. Prioritise it.",action:"Both PYQ blocks today"});
+  const recentPerfect=days7.filter(k=>(history[k]||[]).length===BLOCKS.length).length;
+  if(recentPerfect>=3)insights.push({icon:"👑",text:`${recentPerfect} perfect days this week! You're operating at elite level.`,action:"Make it 7 this week"});
+  const thisWeekStudy=days7.slice(3).reduce((a,k)=>a+BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.hours,0),0);
+  const lastWeekStudy=days7.slice(0,3).reduce((a,k)=>a+BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.hours,0),0);
+  if(thisWeekStudy>lastWeekStudy*1.1)insights.push({icon:"📈",text:"Your study hours are trending up. Momentum is building.",action:"Keep going"});
+  if(!insights.length)insights.push({icon:"💡",text:"Complete more blocks consistently to unlock personalised insights.",action:"Complete today's timetable"});
+  return insights[Math.floor(Math.random()*Math.min(insights.length,3))];
+}
+
+function renderInsight(){
+  const ins=generateInsight();
+  document.getElementById("insight-icon").textContent=ins.icon;
+  document.getElementById("insight-text").textContent=ins.text;
+  document.getElementById("insight-action").textContent="→ "+ins.action;
+  document.getElementById("insight-strip").classList.add("show");
+}
+
+/* ── WEEKLY CHALLENGES ──────────────────────────────── */
+function generateWeeklyChallenges(){
+  const wk=getWeekKey();
+  const seed=wk.split("-").reduce((a,n)=>a+parseInt(n),0);
+  const shuffled=[...WEEKLY_CHALLENGES_POOL].sort((a,b)=>((seed*a.id.charCodeAt(2))%13)-((seed*b.id.charCodeAt(2))%13));
+  weekChallengeIds=shuffled.slice(0,3).map(c=>c.id);
+  weekChallengesWeek=wk;
+  save();
+}
+
+function getChallengeProgress(ch){
+  return ch.track(history,getThisWeekDays());
+}
+
+function renderChallenges(){
+  const container=document.getElementById("challenges-container");
+  const currentWeek=getWeekKey();
+  if(!weekChallengeIds.length||weekChallengesWeek!==currentWeek)generateWeeklyChallenges();
+  let totalPossible=0,totalEarned=0;
+  container.innerHTML="";
+  weekChallengeIds.forEach(id=>{
+    const ch=WEEKLY_CHALLENGES_POOL.find(c=>c.id===id);
+    if(!ch)return;
+    totalPossible+=ch.xp;
+    const prog=getChallengeProgress(ch);
+    const done=prog>=ch.target;
+    if(done)totalEarned+=ch.xp;
+    const pct=Math.min(prog/ch.target,1)*100;
+    const div=document.createElement("div");
+    div.className="challenge-card"+(done?" done":"");
+    div.innerHTML=`<div class="ch-icon">${ch.icon}</div>
+      <div class="ch-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="ch-name">${ch.name}${done?" ✓":""}</div>
+          <div class="ch-xp">+${ch.xp}XP</div>
+        </div>
+        <div class="ch-desc">${ch.desc}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+          <div class="ch-prog-track" style="flex:1;margin-right:8px;"><div class="ch-prog-fill" style="width:${pct}%;background:${done?"var(--green)":"var(--blue)"};"></div></div>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:1px;">${prog}/${ch.target}</div>
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+  const xe=document.getElementById("challenges-xp");
+  if(xe)xe.textContent=totalEarned>0?`${totalEarned}/${totalPossible} XP`:`${totalPossible} XP AVAILABLE`;
+}
+
+/* ── BLOCKS ─────────────────────────────────────────── */
+function renderBlocks(){
+  const c=document.getElementById("blocks-container");c.innerHTML="";
+  const firstUndone=BLOCKS.findIndex(b=>!todayDone.includes(b.id));
+  const TYPE_COLORS={
+    study:  ["rgba(0,200,255,.1)","#00C8FF"],
+    pyq:    ["rgba(255,45,135,.1)","#FF2D87"],
+    break:  ["rgba(107,114,128,.12)","#9CA3AF"],
+    routine:["rgba(155,95,255,.1)","#9B5FFF"]
+  };
+
+  BLOCKS.forEach((block,idx)=>{
+    const done=todayDone.includes(block.id);
+    const isNext=!done&&firstUndone===idx;
+    const div=document.createElement("div");
+    div.className="block-card"+(done?" done":"")+(isNext?" next-up":"");
+    div.id="card-"+block.id;
+    if(done){
+      div.style.background=`linear-gradient(135deg,${block.color}10,${block.color}06)`;
+      div.style.borderColor=block.color+"3a";
+    }else if(isNext){div.style.background="rgba(255,255,255,.018)";}
+
+    // Left accent bar
+    const lb=document.createElement("div");lb.className="bleft";
+    lb.style.background=done?block.color:isNext?"rgba(255,255,255,.28)":"transparent";
+    if(done)lb.style.boxShadow=`0 0 8px ${block.color}88`;
+    if(isNext)lb.className="bleft pulse-anim";
+    div.appendChild(lb);
+
+    // Type pill
+    const[pb,pt]=(TYPE_COLORS[block.type]||TYPE_COLORS.routine);
+    const pill=document.createElement("div");pill.className="btype";
+    pill.textContent=block.type.toUpperCase();
+    pill.style.cssText=`background:${pb};color:${pt};border-color:${pt}22;`;
+    div.appendChild(pill);
+
+    // Inner layout
+    const inner=document.createElement("div");inner.className="binner";
+    const em=document.createElement("div");em.className="bemoji";
+    em.textContent=block.emoji;em.style.filter=done?"none":"grayscale(.45)";
+    const cont=document.createElement("div");cont.className="bcontent";
+
+    cont.innerHTML=`<div class="btitle${done?" done":""}">${block.label}</div>
+      <div class="btime" style="color:${block.color};">${block.time}${block.hours?" · "+block.hours+"h":""}</div>
+      <div class="btip">${block.tip}</div>`;
+
+    // Subject tags (study blocks only)
+    if(block.type==="study"){
+      const tagRow=document.createElement("div");tagRow.className="subject-row";
+      const selSub=todaySubjects[block.id]||null;
+      GATE_SUBJECTS.forEach(sub=>{
+        const tag=document.createElement("button");
+        tag.className="subject-tag "+(selSub===sub?"sel":"unsel");
+        tag.textContent=sub;
+        tag.onclick=()=>{
+          todaySubjects[block.id]=(selSub===sub)?null:sub;
+          if(!historySubjects[todayKey])historySubjects[todayKey]={};
+          historySubjects[todayKey]=Object.assign({},todaySubjects);
+          save();renderBlocks();
+        };
+        tagRow.appendChild(tag);
+      });
+      cont.appendChild(tagRow);
+    }
+
+    // Note
+    const noteWrap=document.createElement("div");noteWrap.className="note-wrap";
+    const noteToggle=document.createElement("button");noteToggle.className="note-toggle-btn";
+    const existNote=todayNotes[block.id]||"";
+    noteToggle.textContent=existNote?"✏ EDIT NOTE":"+ STUDY NOTE";
+    noteToggle.style.color=existNote?block.color:"var(--muted)";
+    const noteArea=document.createElement("textarea");
+    noteArea.className="note-area";noteArea.rows=2;noteArea.value=existNote;
+    noteArea.placeholder="Topics covered, problems solved, concepts learned...";
+    noteToggle.onclick=()=>{noteArea.classList.toggle("open");if(noteArea.classList.contains("open"))noteArea.focus();};
+    noteArea.oninput=()=>{
+      todayNotes[block.id]=noteArea.value;
+      if(!historyNotes[todayKey])historyNotes[todayKey]={};
+      historyNotes[todayKey][block.id]=noteArea.value;
+      save();
+    };
+    noteWrap.appendChild(noteToggle);noteWrap.appendChild(noteArea);
+    cont.appendChild(noteWrap);
+
+    // Action buttons
+    const btnRow=document.createElement("div");btnRow.className="btn-row";
+    if(block.type!=="routine"&&block.type!=="break"&&!done){
+      const tb=document.createElement("button");tb.className="btn-base btn-timer";
+      tb.style.cssText=`border-color:${block.color}33;color:${block.color};`;
+      const pomoDuration=pomoMode==="25"?25/60:pomoMode==="50"?50/60:block.hours;
+      tb.textContent=pomoMode==="full"?"▶ TIMER":`▶ ${pomoMode}MIN`;
+      tb.onclick=()=>startTimer(block,pomoDuration);
+      btnRow.appendChild(tb);
+    }
+    const db=document.createElement("button");db.className="btn-base btn-done";db.disabled=done;
+    db.style.cssText=`background:${block.color}${done?"18":"22"};border-color:${block.color}${done?"44":"2a"};color:${done?block.color:"var(--text)"};`;
+    db.textContent=done?`✓ DONE · +${block.xp}XP`:`COMPLETE +${block.xp}XP`;
+    db.onclick=()=>markDone(block);
+    btnRow.appendChild(db);
+    cont.appendChild(btnRow);
+
+    inner.appendChild(em);inner.appendChild(cont);div.appendChild(inner);c.appendChild(div);
+  });
+}
+
+/* ── MARK DONE ──────────────────────────────────────── */
+function markDone(block){
+  if(todayDone.includes(block.id))return;
+  getAudio();
+
+  const prevRank=getRank(totalXP);
+  const prevCount=todayDone.length;
+  let bonus=0,comboTier=0;
+  if(prevCount>=7){bonus=Math.round(block.xp*.35);comboTier=3;}
+  else if(prevCount>=4){bonus=Math.round(block.xp*.2);comboTier=2;}
+  else if(prevCount>=2){bonus=Math.round(block.xp*.08);comboTier=1;}
+  const earned=block.xp+bonus;
+
+  totalXP+=earned;
+  todayDone=[...todayDone,block.id];
+  history[todayKey]=[...todayDone];
+
+  // Streak logic
+  if(lastActiveDay!==todayKey){
+    const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+    const yKey=`${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,"0")}-${String(yesterday.getDate()).padStart(2,"0")}`;
+    if(!lastActiveDay)streak=1;
+    else if(lastActiveDay===yKey)streak++;
+    else streak=1;
+    if(streak>bestStreak)bestStreak=streak;
+    lastActiveDay=todayKey;
+  }
+  save();
+
+  burstParticles("card-"+block.id,block.color);
+  showFloatXP("card-"+block.id,earned,block.color);
+  SOUNDS.complete();vib([30,10,50]);
+  if(comboTier>0)showCombo(comboTier,prevCount+1,bonus);
+
+  const newRank=getRank(totalXP);
+  if(newRank.name!==prevRank.name){showRankUp(newRank);SOUNDS.rankup();vib([60,30,60,30,120]);}
+
+  checkAchievements();
+  renderAll();
+  if(document.getElementById("tab-stats").classList.contains("active"))renderStats();
+  if(document.getElementById("tab-log").classList.contains("active"))renderLog();
+  if(document.getElementById("tab-rank").classList.contains("active"))renderRank();
+
+  if(todayDone.length===BLOCKS.length){
+    SOUNDS.perfect();vib([100,50,100,50,200]);
+    setTimeout(()=>document.getElementById("perfect-banner").scrollIntoView({behavior:"smooth",block:"center"}),400);
+  }
+}
+
+function updatePerfectBanner(){
+  const pb=document.getElementById("perfect-banner");
+  if(todayDone.length===BLOCKS.length){
+    pb.classList.add("show");
+    const xpEarned=todayDone.reduce((a,id)=>{const b=BLOCKS.find(x=>x.id===id);return a+(b?b.xp:0);},0);
+    document.getElementById("perfect-xp").textContent=`+${xpEarned} XP EARNED TODAY`;
+  }else{pb.className="";}
+}
+
+/* ── FX ─────────────────────────────────────────────── */
+function showFloatXP(cardId,xp,color){
+  const card=document.getElementById(cardId);if(!card)return;
+  const el=document.createElement("div");el.className="fxp";
+  el.textContent="+"+xp;el.style.color=color;el.style.textShadow=`0 0 14px ${color}`;
+  card.style.position="relative";
+  card.appendChild(el);setTimeout(()=>el.remove(),1600);
+}
+
+function burstParticles(cardId,color){
+  const card=document.getElementById(cardId);if(!card)return;
+  const cv=document.createElement("canvas");cv.className="pcv";
+  cv.width=card.offsetWidth;cv.height=card.offsetHeight;
+  card.appendChild(cv);
+  const ctx=cv.getContext("2d");
+  const cols=["#FF2D87","#00C8FF","#FFB800","#FF8C42","#00E5A0",color];
+  const pts=Array.from({length:24},()=>({
+    x:cv.width/2+(Math.random()-.5)*50,y:cv.height*.6,
+    vx:(Math.random()-.5)*5.8,vy:-(Math.random()*5.5+2.2),
+    a:1,r:Math.random()*3.2+1.5,c:cols[Math.floor(Math.random()*cols.length)]
+  }));
+  let raf;
+  (function draw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    let alive=false;
+    pts.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.a-=.020;
+      if(p.a>0){alive=true;ctx.globalAlpha=p.a;ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();}
+    });
+    ctx.globalAlpha=1;
+    if(alive)raf=requestAnimationFrame(draw);else{cancelAnimationFrame(raf);cv.remove();}
+  })();
+}
+
+function showRankUp(rank){
+  const o=document.getElementById("rankup-overlay");
+  document.getElementById("ru-eyebrow").style.color=rank.color;
+  const rn=document.getElementById("ru-name");rn.textContent=rank.emoji+" "+rank.name;rn.style.color=rank.color;rn.style.textShadow=`0 0 28px ${rank.color}`;
+  document.getElementById("ru-desc").textContent=rank.desc;
+  o.style.background=`linear-gradient(135deg,${rank.color}15,${rank.color}06)`;
+  o.style.borderColor=rank.color+"44";
+  o.className="show";setTimeout(()=>o.className="",4300);
+}
+
+function showCombo(tier,count,bonus){
+  const el=document.getElementById("combo-overlay");
+  const msgs=["","","ON A ROLL! +8%","UNSTOPPABLE! +20%","ELITE MODE! +35%"];
+  const cols=["","","#00C8FF","#FF8C42","#FF2D87"];
+  el.innerHTML=`<div style="display:inline-block;background:var(--bg2);border:1px solid ${cols[tier]}44;border-radius:9px;padding:6px 16px;font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:3px;color:${cols[tier]};box-shadow:0 2px 16px rgba(0,0,0,.5);">${count} BLOCKS · ${msgs[tier]} · +${bonus}XP</div>`;
+  el.className="show";setTimeout(()=>el.className="",2800);
+}
+
+function showAchievement(ach){
+  document.getElementById("ach-ov-icon").textContent=ach.icon;
+  document.getElementById("ach-ov-name").textContent=ach.name;
+  document.getElementById("ach-ov-desc").textContent=ach.desc;
+  document.getElementById("ach-overlay").className="show";
+  SOUNDS.achievement();vib([50,30,50,30,100]);
+  setTimeout(()=>document.getElementById("ach-overlay").className="",3900);
+}
+
+/* ── ACHIEVEMENTS ───────────────────────────────────── */
+function checkAchievements(){
+  const snap={totalXP,streak,bestStreak,history,todayDone};
+  const newly=[];
+  ACHIEVEMENTS.forEach(a=>{if(!achievements.includes(a.id)&&a.check(snap)){achievements.push(a.id);newly.push(a);}});
+  if(newly.length){save();newly.forEach((a,i)=>setTimeout(()=>showAchievement(a),i*4200+600));}
+}
+
+/* ── POMODORO ────────────────────────────────────────── */
+function setPomoMode(mode){
+  pomoMode=mode;
+  ["full","50","25"].forEach(m=>{const el=document.getElementById("pomo-"+m);if(el)el.classList.toggle("active",m===mode);});
+  renderBlocks();
+}
+
+/* ── TIMER ───────────────────────────────────────────── */
+function startTimer(block,durationHrs){
+  clearInterval(timerInterval);
+  const secs=Math.round(durationHrs*3600);
+  timerState={blockId:block.id,label:block.label,color:block.color,total:secs,rem:secs,running:true};
+  const bar=document.getElementById("timer-bar");
+  bar.style.background=block.color+"0c";bar.style.border=`1px solid ${block.color}3a`;
+  document.getElementById("timer-mode-lbl").style.color=block.color;
+  document.getElementById("timer-mode-lbl").textContent=
+    pomoMode==="full"?"FOCUS SESSION":pomoMode==="50"?"50-MIN POMODORO":"25-MIN POMODORO";
+  document.getElementById("timer-session-name").textContent=block.label;
+  document.getElementById("timer-prog-fill").style.background=block.color;
+  document.getElementById("timer-disp").style.color=block.color;
+  bar.classList.add("active");
+  bar.scrollIntoView({behavior:"smooth",block:"nearest"});
+  tickTimer();timerInterval=setInterval(tickTimer,1000);
+}
+
+function tickTimer(){
+  if(!timerState||!timerState.running)return;
+  timerState.rem=Math.max(0,timerState.rem-1);
+  const el=document.getElementById("timer-disp");
+  el.textContent=fmtTime(timerState.rem);
+  el.style.color=timerState.rem<60?"#FF5555":timerState.rem<300?"#FFB800":timerState.color;
+  el.style.animation=timerState.rem<60?"pulseAnim .8s infinite":"none";
+  document.getElementById("timer-prog-fill").style.width=((1-timerState.rem/timerState.total)*100)+"%";
+  if(timerState.rem===0){
+    clearInterval(timerInterval);
+    SOUNDS.timerEnd();vib([200,100,200,100,200]);
+    showToast("⏱ Session complete! Mark it done.");
+  }
+}
+
+function toggleTimer(){
+  if(!timerState)return;
+  timerState.running=!timerState.running;
+  document.getElementById("timer-pause-btn").textContent=timerState.running?"⏸":"▶";
+  if(timerState.running){clearInterval(timerInterval);timerInterval=setInterval(tickTimer,1000);}
+  else clearInterval(timerInterval);
+}
+
+function stopTimer(){
+  clearInterval(timerInterval);timerState=null;
+  document.getElementById("timer-bar").classList.remove("active");
+}
+
+/* ── STRATEGY TAB ────────────────────────────────────── */
+function renderStrategy(){
+  // Subject Priority Grid
+  const pg=document.getElementById("priority-grid");
+  if(pg){
+    pg.innerHTML="";
+    SUBJECT_PRIORITIES.forEach(s=>{
+      const card=document.createElement("div");
+      card.className="spg-card";
+      card.style.borderColor=s.color+"28";
+      card.innerHTML=`<div class="spg-name">${s.name}</div>
+        <div class="spg-weight">${s.weight}</div>
+        <div class="spg-badge" style="${s.badge};border-radius:20px;font-size:8px;letter-spacing:2px;padding:2px 8px;margin-top:5px;display:inline-block;font-family:'Bebas Neue',sans-serif;">${s.level}</div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:${s.color}33;border-radius:0 0 var(--radius-sm) var(--radius-sm);"></div>`;
+      pg.appendChild(card);
+    });
+  }
+
+  // Phase Timeline
+  const pt=document.getElementById("phase-timeline");
+  if(pt){
+    pt.innerHTML="";
+    PHASES.forEach(p=>{
+      const item=document.createElement("div");
+      item.className="phase-item";
+      item.innerHTML=`<div class="phase-dot" style="background:${p.bg};border-color:${p.border};">${p.dot}</div>
+        <div class="phase-content">
+          <div class="phase-title" style="color:${p.color};">${p.title}</div>
+          <div class="phase-desc">${p.desc}</div>
+        </div>`;
+      pt.appendChild(item);
+    });
+  }
+
+  // Habits
+  const hc=document.getElementById("habits-container");
+  if(hc){
+    hc.innerHTML="";
+    HABITS.forEach(h=>{
+      const card=document.createElement("div");
+      card.className="topper-card";
+      card.style.borderColor="rgba(255,255,255,.06)";
+      card.innerHTML=`<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:rgba(0,200,255,.35);border-radius:0 2px 2px 0;"></div>
+        <div class="tc-head" style="margin-bottom:4px;">
+          <div class="tc-icon" style="font-size:18px;">${h.icon}</div>
+          <div><div class="tc-title" style="font-size:12px;">${h.title}</div></div>
+        </div>
+        <div class="tc-body" style="font-size:11px;">${h.desc}</div>`;
+      hc.appendChild(card);
+    });
+  }
+}
+
+/* ── STATS ───────────────────────────────────────────── */
+function setRing(circleId,valId,pct,circ,label){
+  const c=document.getElementById(circleId);
+  const v=document.getElementById(valId);
+  if(!c||!v)return;
+  const filled=pct*circ;
+  c.style.strokeDasharray=`${filled} ${circ-filled}`;
+  c.style.strokeDashoffset=circ*.25;
+  v.textContent=label;
+}
+
+function renderStats(){
+  const circ=2*Math.PI*24;
+  const tPct=todayDone.length/BLOCKS.length;
+  setRing("rg-today","rv-today",tPct,circ,Math.round(tPct*100)+"%");
+  const days7=getLast7Days();
+  const wAvg=days7.reduce((a,k)=>a+(history[k]||[]).length,0)/(7*BLOCKS.length);
+  setRing("rg-week","rv-week",wAvg,circ,Math.round(wAvg*100)+"%");
+  const{score}=computeReadiness();
+  setRing("rg-ready","rv-ready",score/100,circ,score+"%");
+
+  const allDays=Object.keys(history).filter(k=>k.length===10&&(history[k]||[]).length>0);
+  document.getElementById("s-totalxp").textContent=totalXP.toLocaleString();
+  document.getElementById("s-days").textContent=allDays.length;
+  const sH=allDays.reduce((a,k)=>a+BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.hours,0),0);
+  const pH=allDays.reduce((a,k)=>a+BLOCKS.filter(b=>b.type==="pyq"  &&(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.hours,0),0);
+  document.getElementById("s-studyhrs").textContent=sH.toFixed(1)+"h";
+  document.getElementById("s-pyqhrs").textContent=pH.toFixed(1)+"h";
+  document.getElementById("s-perfect").textContent=perfectCount({history});
+  document.getElementById("s-beststreak").textContent=Math.max(streak,bestStreak);
+
+  // 7-day XP chart
+  renderBarChart("ch-7xp",days7.map(k=>{
+    const xp=BLOCKS.filter(b=>(history[k]||[]).includes(b.id)).reduce((a,b)=>a+b.xp,0);
+    const d=new Date(k);
+    return{val:xp,label:["M","T","W","T","F","S","S"][(d.getDay()+6)%7],color:"var(--study)"};
+  }),TOTAL_DAY_XP);
+
+  // 14-day completion
+  const days14=getLast14Days();
+  renderBarChart("ch-14comp",days14.map(k=>{
+    const d=new Date(k);
+    return{val:(history[k]||[]).length,label:d.getDate().toString(),color:"var(--purple)"};
+  }),BLOCKS.length);
+
+  // Study vs PYQ grouped
+  const bkEl=document.getElementById("ch-breakdown");
+  if(bkEl){
+    bkEl.innerHTML="";
+    const maxH=Math.max(...days7.map(k=>{
+      const sh=BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((a,b)=>a+b.hours,0);
+      const ph=BLOCKS.filter(b=>b.type==="pyq"  &&(history[k]||[]).includes(b.id)).reduce((a,b)=>a+b.hours,0);
+      return sh+ph;
+    }),0.1);
+    days7.forEach(k=>{
+      const sh=BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((a,b)=>a+b.hours,0);
+      const ph=BLOCKS.filter(b=>b.type==="pyq"  &&(history[k]||[]).includes(b.id)).reduce((a,b)=>a+b.hours,0);
+      const d=new Date(k);const lbl=["M","T","W","T","F","S","S"][(d.getDay()+6)%7];
+      const col=document.createElement("div");
+      col.style.cssText="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end;height:72px;";
+      const sp=document.createElement("div");sp.style.cssText=`width:100%;background:var(--study);border-radius:2px 2px 0 0;height:${sh/maxH*52}px;transition:height .8s ease;`;
+      const pp=document.createElement("div");pp.style.cssText=`width:100%;background:var(--pyq);border-radius:2px 2px 0 0;height:${ph/maxH*52}px;transition:height .8s ease;`;
+      const la=document.createElement("div");la.className="bl";la.textContent=lbl;
+      col.appendChild(sp);col.appendChild(pp);col.appendChild(la);
+      bkEl.appendChild(col);
+    });
+  }
+
+  // Subject stats
+  const subMap={};
+  Object.keys(historySubjects).forEach(day=>{
+    const subs=historySubjects[day]||{};
+    Object.values(subs).forEach(sub=>{if(sub)subMap[sub]=(subMap[sub]||0)+1;});
+  });
+  const subEl=document.getElementById("subject-stats-container");
+  if(subEl){
+    const entries=Object.entries(subMap).sort((a,b)=>b[1]-a[1]);
+    if(!entries.length){
+      subEl.innerHTML='<div style="font-size:11px;color:var(--muted);font-style:italic;text-align:center;padding:16px 0;">Tag study blocks with subjects to see distribution</div>';
+    }else{
+      subEl.innerHTML="";
+      const mx=entries[0][1];
+      const subColors=["#00C8FF","#FF2D87","#FFB800","#00E5A0","#9B5FFF","#FF8C42","#00E5C4","#FF5555","#A0785A","#8B8FA8","#00C8FF","#FF2D87"];
+      entries.forEach(([sub,cnt],i)=>{
+        const row=document.createElement("div");row.className="subject-bar-row";
+        row.innerHTML=`<div class="subject-bar-label">${sub}</div>
+          <div class="subject-bar-track"><div class="subject-bar-fill" style="width:${(cnt/mx)*100}%;background:${subColors[i%subColors.length]};"></div></div>
+          <div class="subject-bar-val">${cnt}</div>`;
+        subEl.appendChild(row);
+      });
+    }
+  }
+
+  // Heatmap
+  const hmEl=document.getElementById("heatmap");
+  if(hmEl){
+    hmEl.innerHTML="";
+    const days28=getLast28Days();
+    days28.forEach(k=>{
+      const cnt=(history[k]||[]).length;
+      const cell=document.createElement("div");cell.className="hm-cell";
+      cell.title=`${k}: ${cnt} blocks`;
+      const bg=cnt===0?"#182030":cnt<3?"#1a4030":cnt<6?"rgba(0,229,160,.4)":cnt<BLOCKS.length?"var(--study)":"var(--pyq)";
+      cell.style.background=bg;
+      hmEl.appendChild(cell);
+    });
+  }
+
+  // Achievements
+  const ag=document.getElementById("ach-grid");
+  if(ag){
+    ag.innerHTML="";
+    const snap={totalXP,streak,bestStreak,history,todayDone};
+    ACHIEVEMENTS.forEach(a=>{
+      const unlocked=achievements.includes(a.id)||a.check(snap);
+      const card=document.createElement("div");
+      card.className="ach-card "+(unlocked?"unlocked":"locked");
+      card.innerHTML=`<div style="font-size:26px;">${a.icon}</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:2px;color:${unlocked?"var(--gold)":"var(--muted)"};">${a.name}</div>
+        <div style="font-size:9px;color:var(--muted);">${a.desc}</div>`;
+      ag.appendChild(card);
+    });
+  }
+}
+
+function renderBarChart(containerId,data,maxVal){
+  const el=document.getElementById(containerId);if(!el)return;
+  el.innerHTML="";
+  const mx=Math.max(...data.map(d=>d.val),maxVal*.05);
+  data.forEach(d=>{
+    const col=document.createElement("div");
+    col.style.cssText="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end;height:72px;";
+    const bar=document.createElement("div");bar.className="br";
+    bar.style.cssText=`background:${d.color};height:${Math.max(d.val/mx*60,d.val>0?3:0)}px;`;
+    const lbl=document.createElement("div");lbl.className="bl";lbl.textContent=d.label;
+    col.appendChild(bar);col.appendChild(lbl);el.appendChild(col);
+  });
+}
+
+/* ── LOG ─────────────────────────────────────────────── */
+function renderLog(){
+  const c=document.getElementById("log-container");c.innerHTML="";
+  const allDays=Object.keys(history).filter(k=>k.length===10&&(history[k]||[]).length>0).sort().reverse();
+  if(!allDays.length){
+    c.innerHTML='<div style="text-align:center;padding:40px 16px;color:var(--muted);font-size:12px;font-style:italic;">No activity logged yet. Complete your first block today.</div>';
+    return;
+  }
+  allDays.slice(0,30).forEach(day=>{
+    const blocks=history[day]||[];
+    const dayXP=blocks.reduce((a,id)=>{const b=BLOCKS.find(x=>x.id===id);return a+(b?b.xp:0);},0);
+    const d=new Date(day);
+    const dayStr=d.toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
+    const isPerfect=blocks.length===BLOCKS.length;
+    const div=document.createElement("div");div.className="log-day";
+    const hdr=document.createElement("div");hdr.className="log-day-hdr";
+    hdr.innerHTML=`<div style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text);">${isPerfect?"🏆 ":""}${dayStr.toUpperCase()}</div>
+      <div style="font-size:10px;color:var(--gold);font-family:'Bebas Neue',sans-serif;letter-spacing:1px;">+${dayXP}XP · ${blocks.length}/${BLOCKS.length} BLOCKS</div>`;
+    div.appendChild(hdr);
+    blocks.forEach(id=>{
+      const b=BLOCKS.find(x=>x.id===id);if(!b)return;
+      const entry=document.createElement("div");entry.className="log-entry";
+      const sub=historySubjects[day]?historySubjects[day][id]||"":null;
+      entry.innerHTML=`<div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:14px;">${b.emoji}</span>
+          <div>
+            <div style="font-size:11px;color:var(--text);">${b.label}${sub?` · <span style="color:${b.color};font-size:10px;">${sub}</span>`:""}</div>
+            <div style="font-size:9px;color:var(--muted);margin-top:1px;">${b.time}</div>
+          </div>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:${b.color};letter-spacing:1px;">+${b.xp}XP</div>`;
+      div.appendChild(entry);
+      const note=historyNotes[day]?historyNotes[day][id]:"";
+      if(note){const nd=document.createElement("div");nd.className="log-note";nd.textContent="📝 "+note;div.appendChild(nd);}
+    });
+    c.appendChild(div);
+  });
+}
+
+/* ── RANK ────────────────────────────────────────────── */
+function renderRank(){
+  const rank=getRank(totalXP);const next=getNextRank(totalXP);
+  const hero=document.getElementById("rank-hero-card");
+  hero.style.cssText=`background:linear-gradient(135deg,${rank.color}12,${rank.color}05);border:1px solid ${rank.color}28;`;
+  hero.innerHTML=`<div style="font-size:52px;margin-bottom:10px;filter:drop-shadow(0 0 16px ${rank.color}66);">${rank.emoji}</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:5px;color:${rank.color};text-shadow:0 0 20px ${rank.color}66;margin-bottom:4px;">${rank.name}</div>
+    <div style="font-size:11px;color:var(--muted);font-style:italic;margin-bottom:16px;">${rank.desc}</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:4px;color:var(--gold);">${totalXP.toLocaleString()} XP</div>
+    ${next?`<div style="font-size:10px;color:var(--muted);margin-top:6px;">${(next.min-totalXP).toLocaleString()} XP to ${next.name}</div>`:"<div style='font-size:10px;color:var(--gold);margin-top:6px;letter-spacing:2px;font-family:Bebas Neue,sans-serif;'>MAX RANK ACHIEVED</div>"}`;
+
+  const ladder=document.getElementById("rank-ladder");ladder.innerHTML="";
+  RANKS.forEach(r=>{
+    const unlocked=totalXP>=r.min;const isCurr=r.name===rank.name;
+    const row=document.createElement("div");row.className="rank-row-item"+(isCurr?" current":"");
+    row.style.cssText=`background:${isCurr?`${r.color}0d`:"transparent"};border-color:${isCurr?`${r.color}28`:"transparent"};opacity:${unlocked?"1":".18"};`;
+    row.innerHTML=`<div style="font-size:18px;">${r.emoji}</div>
+      <div style="flex:1;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:12px;color:${unlocked?r.color:"var(--muted)"};letter-spacing:2px;">${r.name}${isCurr?" ◀":""}</div>
+        <div style="font-size:9px;color:var(--muted);font-style:italic;">${r.desc}</div>
+      </div>
+      <div style="font-size:9px;color:var(--muted);">${r.min.toLocaleString()}</div>`;
+    ladder.appendChild(row);
+  });
+
+  const cl=document.getElementById("contract-list");cl.innerHTML="";
+  BLOCKS.forEach(b=>{
+    const row=document.createElement("div");row.className="contract-row";
+    row.innerHTML=`<span style="font-size:14px;">${b.emoji}</span><span style="flex:1;font-size:10px;color:var(--sub);">${b.label}</span><span style="font-family:'Bebas Neue',sans-serif;font-size:9px;color:${b.color};letter-spacing:1px;">${b.time}</span>`;
+    cl.appendChild(row);
+  });
+}
+
+/* ── SETTINGS ────────────────────────────────────────── */
+function applySettings(){
+  document.getElementById("tog-sound").className="toggle"+(settings.sound?" on":"");
+  document.getElementById("tog-vibrate").className="toggle"+(settings.vibrate?" on":"");
+  document.getElementById("goal-slider").value=weeklyGoalXP;
+  document.getElementById("goal-display").textContent=weeklyGoalXP.toLocaleString();
+  document.getElementById("profile-name-input").value=userName;
+  if(examDate)document.getElementById("exam-date-input").value=examDate;
+  const fb=document.getElementById("freeze-btn");
+  if(streakFreezes>0){
+    fb.textContent="USE FREEZE";
+    fb.style.cssText="padding:7px 12px;background:rgba(0,200,255,.1);border-color:rgba(0,200,255,.3);color:var(--blue);";
+    fb.disabled=false;
+    document.getElementById("freeze-sub").textContent="1 freeze available this week";
+  }else{
+    fb.textContent="USED";
+    fb.style.cssText="padding:7px 12px;background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.07);color:var(--muted);";
+    fb.disabled=true;
+    document.getElementById("freeze-sub").textContent="Resets every Monday";
+  }
+  document.getElementById("profile-name-display").textContent=userName||"Not set";
+  if(examDate){
+    const d=new Date(examDate);
+    document.getElementById("exam-date-display").textContent=d.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"});
+  }else{
+    document.getElementById("exam-date-display").textContent="Not set";
+  }
+}
+
+function toggleSetting(k){
+  settings[k]=!settings[k];save();applySettings();
+  if(k==="sound"&&settings.sound)SOUNDS.complete();
+  if(k==="vibrate"&&settings.vibrate)vib([30,10,50]);
+}
+function updateGoal(v){weeklyGoalXP=parseInt(v);document.getElementById("goal-display").textContent=parseInt(v).toLocaleString();save();renderHeader();}
+function updateName(v){userName=v;save();renderHeader();}
+function updateExamDate(v){examDate=v;save();renderHeader();}
+function useStreakFreeze(){if(streakFreezes<=0){SOUNDS.error();return;}streakFreezes=-1;save();applySettings();SOUNDS.freeze();vib([50,30,80]);showToast("🛡 Streak freeze activated!");}
+
+function exportData(){
+  const data={exportDate:new Date().toISOString(),appVersion:"5.0",totalXP,streak,bestStreak,lastActiveDay,todayKey,todayDone,todayNotes,todaySubjects,history,historySubjects,historyNotes,achievements,streakFreezes,lastFreezeWeek,settings,weeklyGoalXP,userName,examDate,weekChallengeIds,weekChallengesWeek};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");
+  a.href=url;a.download=`gate-grind-v5-backup-${getToday()}.json`;
+  a.click();URL.revokeObjectURL(url);showToast("✅ Backup exported!");SOUNDS.complete();
+}
+
+function importData(){document.getElementById("import-file").click();}
+
+function handleImport(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.totalXP===undefined)throw new Error("Invalid format");
+      totalXP       =data.totalXP||0;
+      streak        =data.streak||0;
+      bestStreak    =data.bestStreak||0;
+      lastActiveDay =data.lastActiveDay||"";
+      todayKey      =data.todayKey||getToday();
+      todayDone     =data.todayDone||[];
+      todayNotes    =data.todayNotes||{};
+      todaySubjects =data.todaySubjects||{};
+      history       =data.history||{};
+      historySubjects=data.historySubjects||{};
+      historyNotes  =data.historyNotes||{};
+      achievements  =data.achievements||[];
+      streakFreezes =data.streakFreezes!=null?data.streakFreezes:1;
+      lastFreezeWeek=data.lastFreezeWeek||"";
+      settings      =Object.assign({sound:true,vibrate:true},data.settings||{});
+      weeklyGoalXP  =data.weeklyGoalXP||7000;
+      userName      =data.userName||"";
+      examDate      =data.examDate||"";
+      weekChallengeIds=data.weekChallengeIds||[];
+      weekChallengesWeek=data.weekChallengesWeek||"";
+      save();renderAll();applySettings();showToast("✅ Backup restored!");SOUNDS.achievement();
+    }catch(err){showToast("❌ Invalid backup file");SOUNDS.error();}
+  };
+  reader.readAsText(file);input.value="";
+}
+
+function confirmReset(){
+  if(confirm("⚠️ Delete ALL data permanently? This cannot be undone.")){
+    localStorage.removeItem(SK);location.reload();
+  }
+}
+
+/* ── TABS ────────────────────────────────────────────── */
+const ALL_TABS=["today","strategy","stats","log","rank","settings"];
+
+function switchTab(tab){
+  ALL_TABS.forEach(t=>{
+    const tp=document.getElementById("tab-"+t);
+    if(tp)tp.className="tab-pane"+(t===tab?" active":"");
+    const nb=document.getElementById("nav-"+t);
+    if(nb)nb.className="nav-btn"+(t===tab?" active":"");
+  });
+  document.getElementById("scroll-area").scrollTop=0;
+  if(tab==="stats")renderStats();
+  if(tab==="log")renderLog();
+  if(tab==="rank")renderRank();
+  if(tab==="settings")applySettings();
+}
+
+/* ── QUOTES ──────────────────────────────────────────── */
+function startQuotes(){
+  const el=document.getElementById("quote-bar");
+  const h=new Date().getHours();
+  const pool=h<12?Q_MORNING:h<17?Q_AFTERNOON:Q_EVENING;
+  quoteIdx=Math.floor(Math.random()*pool.length);
+  const upd=()=>{el.textContent='"'+pool[quoteIdx%pool.length]+'"';};
+  upd();setInterval(()=>{quoteIdx++;upd();},11000);
+}
+
+/* ── SOUND ENGINE ────────────────────────────────────── */
+let audioCtx=null;
+function getAudio(){if(!audioCtx)try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}return audioCtx;}
+function playTone(freqs,dur=.3,type="sine",vol=.12){
+  if(!settings.sound)return;const ctx=getAudio();if(!ctx)return;
+  freqs.forEach((f,i)=>{
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);o.type=type;o.frequency.value=f;
+    const t=ctx.currentTime+i*.08;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+    o.start(t);o.stop(t+dur+.05);
+  });
+}
+const SOUNDS={
+  complete:   ()=>playTone([523,659,784],.25,"sine",.1),
+  achievement:()=>playTone([523,659,784,1047],.35,"sine",.13),
+  rankup:     ()=>playTone([392,494,587,698,880],.4,"sine",.15),
+  perfect:    ()=>playTone([523,659,784,1047,1319],.5,"triangle",.13),
+  timerEnd:   ()=>{for(let i=0;i<3;i++)setTimeout(()=>playTone([880,660],.3,"square",.08),i*400);},
+  error:      ()=>playTone([200],.2,"sawtooth",.06),
+  freeze:     ()=>playTone([440,330],.3,"sine",.1),
+};
+
+/* ── HAPTICS ─────────────────────────────────────────── */
+function vib(p){if(settings.vibrate&&navigator.vibrate)navigator.vibrate(p);}
+
+/* ── TOAST ───────────────────────────────────────────── */
+function showToast(msg){
+  const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2800);
+}
+
+/* ── MIDNIGHT RESET ──────────────────────────────────── */
+function startMidnightCheck(){
+  setInterval(()=>{
+    const nk=getToday();if(nk===todayKey)return;
+    const prev=new Date(todayKey);const now=new Date(nk);
+    const diff=Math.round((now-prev)/86400000);
+    if(diff>1){
+      if(streakFreezes===-1)streakFreezes=0;
+      else streak=0;
+    }
+    todayKey=nk;todayDone=[];todayNotes={};todaySubjects={};
+    history[todayKey]=[];
+    const wk=getWeekKey();
+    if(lastFreezeWeek!==wk){streakFreezes=1;lastFreezeWeek=wk;}
+    if(weekChallengesWeek!==wk)generateWeeklyChallenges();
+    save();renderAll();applySettings();
+  },60000);
+}
+
+// Init pomo UI on DOM ready
+document.addEventListener("DOMContentLoaded",()=>setPomoMode("full"));
+</script>
+</body>
+</html>
