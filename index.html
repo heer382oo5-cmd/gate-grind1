@@ -750,6 +750,8 @@ body{
           <div class="streak-num" id="streak-val">0</div>
           <div class="streak-lbl">STREAK</div>
         </div>
+        <button id="install-btn" onclick="triggerInstall()" title="Install App"
+          style="display:none;width:35px;height:35px;border-radius:50%;background:rgba(0,200,255,.12);border:1px solid rgba(0,200,255,.35);color:var(--blue);font-size:15px;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;">⬇</button>
         <button class="settings-btn" onclick="switchTab('settings')" title="Settings">⚙</button>
       </div>
     </div>
@@ -1465,12 +1467,13 @@ function finishOnboarding(){
 /* ── INIT ───────────────────────────────────────────── */
 function initApp(){
   renderAll();
+  setPomoMode("full");   // must come AFTER renderAll so pomo buttons exist in DOM
   applySettings();
   startQuotes();
   renderInsight();
   renderStrategy();
   startMidnightCheck();
-  document.addEventListener("DOMContentLoaded",()=>setPomoMode("full"));
+  setupPWA();            // register SW + handle install prompt
 }
 
 /* ── RENDER ALL ─────────────────────────────────────── */
@@ -2380,8 +2383,52 @@ function startMidnightCheck(){
   },60000);
 }
 
-// Init pomo UI on DOM ready
-document.addEventListener("DOMContentLoaded",()=>setPomoMode("full"));
+/* ── PWA SETUP — SW registration + install prompt ──────── */
+function setupPWA(){
+  if(!("serviceWorker" in navigator))return;
+
+  navigator.serviceWorker.register("./sw.js")
+    .then(reg=>{
+      // Listen for updates
+      reg.addEventListener("updatefound",()=>{
+        const w=reg.installing;
+        if(w)w.addEventListener("statechange",()=>{
+          if(w.state==="installed"&&navigator.serviceWorker.controller)
+            showToast("🔄 Update available — restart to apply");
+        });
+      });
+    })
+    .catch(err=>console.warn("SW registration failed:",err));
+
+  // Capture the install prompt
+  window.addEventListener("beforeinstallprompt",e=>{
+    e.preventDefault();
+    window._installPrompt=e;
+    const btn=document.getElementById("install-btn");
+    if(btn){btn.style.display="flex";}
+  });
+
+  // Hide install button after successful install
+  window.addEventListener("appinstalled",()=>{
+    window._installPrompt=null;
+    const btn=document.getElementById("install-btn");
+    if(btn)btn.style.display="none";
+    showToast("✅ GATE Grind installed!");
+  });
+}
+
+function triggerInstall(){
+  if(window._installPrompt){
+    window._installPrompt.prompt();
+    window._installPrompt.userChoice.then(r=>{
+      window._installPrompt=null;
+      const btn=document.getElementById("install-btn");
+      if(btn)btn.style.display="none";
+    });
+  }else{
+    showToast("📱 Chrome menu → Add to Home Screen");
+  }
+}
 </script>
 </body>
 </html>

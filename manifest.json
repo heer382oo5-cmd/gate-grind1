@@ -1,16 +1,25 @@
 {
   "name": "GATE Grind",
   "short_name": "GATE Grind",
-  "description": "Elite AI-powered GATE exam discipline tracker",
+  "description": "Elite GATE exam discipline tracker — 9.5 hours. Every day. No excuses.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#060A12",
-  "theme_color": "#060A12",
+  "background_color": "#04080F",
+  "theme_color": "#04080F",
   "orientation": "portrait-primary",
   "icons": [
-    {"src":"https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/2694.png","sizes":"72x72","type":"image/png"},
-    {"src":"https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/2694.png","sizes":"192x192","type":"image/png"},
-    {"src":"https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/2694.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
