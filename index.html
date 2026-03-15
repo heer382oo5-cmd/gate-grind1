@@ -239,7 +239,7 @@ body{
   padding:7px 4px;text-align:center;
   transition:border-color .25s;
 }
-.mini-val{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;line-height:1;}
+.mini-val{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.5px;line-height:1;white-space:nowrap;overflow:hidden;}
 .mini-lbl{font-size:7px;letter-spacing:2px;color:var(--muted);margin-top:2px;text-transform:uppercase;}
 
 /* PROGRESS BARS */
@@ -1331,7 +1331,7 @@ function p2(n){return String(n).padStart(2,"0");}
 function fmtTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return h>0?`${h}:${p2(m)}:${p2(ss)}`:`${p2(m)}:${p2(ss)}`;}
 
 /* ── STATE ──────────────────────────────────────────── */
-let totalXP=0,streak=0,bestStreak=0,lastActiveDay="";
+let totalXP=0,streak=0,bestStreak=0,lastActiveDay="",todayXP=0;
 let todayKey=getToday(),todayDone=[],todayNotes={},todaySubjects={};
 let history={},historySubjects={},historyNotes={};
 let achievements=[];
@@ -1381,7 +1381,7 @@ function load(){
 function save(){
   try{
     localStorage.setItem(SK,JSON.stringify({
-      totalXP,streak,bestStreak,lastActiveDay,
+      totalXP,streak,bestStreak,lastActiveDay,todayXP,
       todayKey,todayDone,todayNotes,todaySubjects,
       history,historySubjects,historyNotes,
       achievements,streakFreezes,lastFreezeWeek,
@@ -1401,6 +1401,7 @@ function save(){
     streak        =d.streak||0;
     bestStreak    =d.bestStreak||0;
     lastActiveDay =d.lastActiveDay||"";
+    todayXP       =d.todayXP||0;
     todayKey      =d.todayKey||getToday();
     todayDone     =Array.isArray(d.todayDone)?d.todayDone:[];
     todayNotes    =d.todayNotes&&typeof d.todayNotes==="object"?d.todayNotes:{};
@@ -1419,6 +1420,16 @@ function save(){
     weekChallengesWeek=d.weekChallengesWeek||"";
     onboardingDone=!!d.onboardingDone;
 
+    // ── todayXP self-healing: reconstruct from todayDone if missing or zero
+    // Handles: old saves (no todayXP field), backup restores, any state desync
+    if(!todayXP&&todayDone.length>0){
+      todayXP=todayDone.reduce((a,id)=>{
+        const b=BLOCKS.find(x=>x.id===id);return a+(b?b.xp:0);
+      },0);
+      // Persist so the reconstructed value survives next reload
+      try{const raw=JSON.parse(localStorage.getItem(SK)||"{}");raw.todayXP=todayXP;localStorage.setItem(SK,JSON.stringify(raw));}catch(e){}
+    }
+
     // Day rollover check on boot
     if(todayKey!==getToday()){
       const prev=new Date(todayKey);const now=new Date(getToday());
@@ -1427,7 +1438,7 @@ function save(){
         if(streakFreezes===-1)streakFreezes=0;
         else streak=0;
       }
-      todayKey=getToday();todayDone=[];todayNotes={};todaySubjects={};
+      todayKey=getToday();todayDone=[];todayNotes={};todaySubjects={};todayXP=0;
       history[todayKey]=[];
     }
     // Weekly freeze reset
@@ -1500,10 +1511,9 @@ function initApp(){
   setPomoMode("full");   // must come AFTER renderAll so pomo buttons exist in DOM
   applySettings();
   startQuotes();
-  renderInsight();
   renderStrategy();
   startMidnightCheck();
-  setupPWA();            // register SW + handle install prompt
+  setupPWA();
 }
 
 /* ── RENDER ALL ─────────────────────────────────────── */
@@ -1512,6 +1522,7 @@ function renderAll(){
   renderBlocks();
   renderChallenges();
   updatePerfectBanner();
+  renderInsight();
 }
 
 /* ── HEADER ─────────────────────────────────────────── */
@@ -1568,11 +1579,10 @@ function renderHeader(){
   // Mini stats
   const sH=BLOCKS.filter(b=>b.type==="study"&&todayDone.includes(b.id)).reduce((a,b)=>a+b.hours,0);
   const pH=BLOCKS.filter(b=>b.type==="pyq"  &&todayDone.includes(b.id)).reduce((a,b)=>a+b.hours,0);
-  const tXP=todayDone.reduce((a,id)=>{const b=BLOCKS.find(x=>x.id===id);return a+(b?b.xp:0);},0);
   document.getElementById("hdr-study").textContent=sH+"/"+STUDY_HRS+"h";
   document.getElementById("hdr-pyq").textContent=pH+"/"+PYQ_HRS+"h";
   document.getElementById("hdr-blocks").textContent=todayDone.length+"/"+BLOCKS.length;
-  document.getElementById("hdr-xp").textContent="+"+tXP;
+  document.getElementById("hdr-xp").textContent=todayXP>0?"+"+todayXP:"-";
 
   // Day progress
   const dayPct=todayDone.length/BLOCKS.length*100;
@@ -1624,22 +1634,84 @@ function computeReadiness(){
 
 /* ── INSIGHTS ENGINE ────────────────────────────────── */
 function generateInsight(){
-  const days7=getLast7Days();const insights=[];
+  const days7=getLast7Days();
+  // blockRates uses last 7 days INCLUDING today's completed blocks
   const blockRates={};
-  BLOCKS.forEach(b=>{blockRates[b.id]=days7.filter(k=>(history[k]||[]).includes(b.id)).length/7;});
+  BLOCKS.forEach(b=>{
+    const historyDays=days7.slice(0,6).filter(k=>(history[k]||[]).includes(b.id)).length;
+    const todayCount=todayDone.includes(b.id)?1:0;
+    blockRates[b.id]=(historyDays+todayCount)/7;
+  });
+
+  const todayBlockCount=todayDone.length;
+  const p1Done=todayDone.includes("p1");
+  const p2Done=todayDone.includes("p2");
+  const pyqDoneToday=p1Done&&p2Done;
+  const allDoneToday=todayBlockCount===BLOCKS.length;
+
+  const insights=[];
+
+  // ── POSITIVE: perfect day ──
+  if(allDoneToday){
+    insights.push({priority:10,icon:"🏆",text:"PERFECT DAY achieved! Every single block done. You are operating at AIR level.",action:"Rest and recharge for tomorrow"});
+  }
+
+  // ── POSITIVE: streak milestone ──
+  if(streak>=7&&streak%7===0){
+    insights.push({priority:9,icon:"🔥",text:`${streak}-day streak! That's in the top 1% of GATE aspirants. Don't stop.`,action:"Keep the chain unbroken"});
+  }else if(streak>=5){
+    insights.push({priority:7,icon:"🔥",text:`${streak}-day streak! You're in the top 5% for consistency. Momentum is yours.`,action:"Don't break it today"});
+  }
+
+  // ── POSITIVE: both PYQ done today ──
+  if(pyqDoneToday&&!allDoneToday){
+    insights.push({priority:8,icon:"⚡",text:"Both PYQ blocks done today — that's where rank gets decided. Finish the remaining blocks.",action:"Complete the day"});
+  }
+
+  // ── POSITIVE: trend up ──
+  const thisHalf=days7.slice(3,7).reduce((a,k)=>a+BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.hours,0),0);
+  const lastHalf=days7.slice(0,3).reduce((a,k)=>a+BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.hours,0),0);
+  if(thisHalf>lastHalf*1.15&&thisHalf>0){
+    insights.push({priority:6,icon:"📈",text:"Study hours trending up this week. Momentum is building — ride it.",action:"Keep going"});
+  }
+
+  // ── POSITIVE: recent perfect days ──
+  const recentPerfect=days7.filter(k=>(history[k]||[]).length===BLOCKS.length).length;
+  if(recentPerfect>=3){
+    insights.push({priority:7,icon:"👑",text:`${recentPerfect} perfect days this week — elite level. Push for all 7.`,action:"Make it 7 this week"});
+  }
+
+  // ── WARNINGS: only show if not already fixed today ──
+  // Weak study block (only warn if it's not done today)
   const weakStudy=["s1","s2","s3"].sort((a,b)=>blockRates[a]-blockRates[b])[0];
   const weakBlock=BLOCKS.find(b=>b.id===weakStudy);
-  if(weakBlock&&blockRates[weakStudy]<.5)insights.push({icon:"⚠️",text:`${weakBlock.label} only done ${Math.round(blockRates[weakStudy]*100)}% of days. This is your biggest gap.`,action:"Fix this slot today"});
-  if(streak>=5)insights.push({icon:"🔥",text:`${streak}-day streak! You're in the top 5% of GATE aspirants for consistency.`,action:"Don't break it today"});
+  if(weakBlock&&blockRates[weakStudy]<0.5&&!todayDone.includes(weakStudy)){
+    insights.push({priority:5,icon:"⚠️",text:`${weakBlock.label} completed only ${Math.round(blockRates[weakStudy]*100)}% of days — your biggest consistency gap.`,action:"Fix this slot today"});
+  }
+
+  // PYQ warning: only show if neither PYQ block done today
   const pyqRate=(blockRates["p1"]+blockRates["p2"])/2;
-  if(pyqRate<.4)insights.push({icon:"📝",text:"PYQ completion is low. PYQ practice is 40% of GATE score. Prioritise it.",action:"Both PYQ blocks today"});
-  const recentPerfect=days7.filter(k=>(history[k]||[]).length===BLOCKS.length).length;
-  if(recentPerfect>=3)insights.push({icon:"👑",text:`${recentPerfect} perfect days this week! You're operating at elite level.`,action:"Make it 7 this week"});
-  const thisWeekStudy=days7.slice(3).reduce((a,k)=>a+BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.hours,0),0);
-  const lastWeekStudy=days7.slice(0,3).reduce((a,k)=>a+BLOCKS.filter(b=>b.type==="study"&&(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.hours,0),0);
-  if(thisWeekStudy>lastWeekStudy*1.1)insights.push({icon:"📈",text:"Your study hours are trending up. Momentum is building.",action:"Keep going"});
-  if(!insights.length)insights.push({icon:"💡",text:"Complete more blocks consistently to unlock personalised insights.",action:"Complete today's timetable"});
-  return insights[Math.floor(Math.random()*Math.min(insights.length,3))];
+  if(pyqRate<0.4&&!p1Done&&!p2Done){
+    insights.push({priority:4,icon:"📝",text:"PYQ completion rate is low. PYQ practice drives 40% of your GATE score.",action:"Start PYQ session now"});
+  }else if(pyqRate<0.4&&(p1Done||p2Done)&&!pyqDoneToday){
+    insights.push({priority:5,icon:"📝",text:"Good — one PYQ block done. Complete the second PYQ session to maximise today.",action:"Start Night PYQ Sprint"});
+  }
+
+  // ── PROGRESS: in-progress day ──
+  if(todayBlockCount>0&&todayBlockCount<BLOCKS.length&&todayBlockCount>=5){
+    insights.push({priority:6,icon:"💪",text:`${todayBlockCount}/${BLOCKS.length} blocks done. ${BLOCKS.length-todayBlockCount} remaining — finish strong.`,action:"Complete the remaining blocks"});
+  }else if(todayBlockCount>0&&todayBlockCount<5){
+    insights.push({priority:3,icon:"⚡",text:`${todayBlockCount} block${todayBlockCount>1?"s":""} done. Keep the momentum — every block counts toward your rank.`,action:"Continue your session"});
+  }
+
+  // ── FALLBACK for fresh users ──
+  if(!insights.length){
+    insights.push({priority:1,icon:"💡",text:"Complete blocks and build your streak to unlock personalised insights.",action:"Start today's timetable"});
+  }
+
+  // Return highest priority insight
+  insights.sort((a,b)=>b.priority-a.priority);
+  return insights[0];
 }
 
 function renderInsight(){
@@ -1653,7 +1725,7 @@ function renderInsight(){
 /* ── WEEKLY CHALLENGES ──────────────────────────────── */
 function generateWeeklyChallenges(){
   const wk=getWeekKey();
-  const seed=wk.split("-").reduce((a,n)=>a+parseInt(n),0);
+  const seed=wk.split("-").reduce((a,n)=>a+parseInt(n,10),0);
   const shuffled=[...WEEKLY_CHALLENGES_POOL].sort((a,b)=>((seed*a.id.charCodeAt(2))%13)-((seed*b.id.charCodeAt(2))%13));
   weekChallengeIds=shuffled.slice(0,3).map(c=>c.id);
   weekChallengesWeek=wk;
@@ -1822,6 +1894,7 @@ function markDone(block){
   const earned=block.xp+bonus;
 
   totalXP+=earned;
+  todayXP+=earned;
   todayDone=[...todayDone,block.id];
   history[todayKey]=[...todayDone];
 
@@ -1868,8 +1941,7 @@ function updatePerfectBanner(){
   const pb=document.getElementById("perfect-banner");
   if(todayDone.length===BLOCKS.length){
     pb.classList.add("show");
-    const xpEarned=todayDone.reduce((a,id)=>{const b=BLOCKS.find(x=>x.id===id);return a+(b?b.xp:0);},0);
-    document.getElementById("perfect-xp").textContent=`+${xpEarned} XP EARNED TODAY`;
+    document.getElementById("perfect-xp").textContent=`+${todayXP} XP EARNED TODAY`;
   }else{pb.className="";}
 }
 
@@ -1964,7 +2036,10 @@ function startTimer(block,durationHrs){
   document.getElementById("timer-disp").style.color=block.color;
   bar.classList.add("active");
   bar.scrollIntoView({behavior:"smooth",block:"nearest"});
-  tickTimer();timerInterval=setInterval(tickTimer,1000);
+  // update display immediately without decrementing, then start interval
+  document.getElementById("timer-disp").textContent=fmtTime(timerState.rem);
+  document.getElementById("timer-prog-fill").style.width="0%";
+  timerInterval=setInterval(tickTimer,1000);
 }
 
 function tickTimer(){
@@ -2472,7 +2547,7 @@ function updateExamDate(v){examDate=v;save();renderHeader();}
 function useStreakFreeze(){if(streakFreezes<=0){SOUNDS.error();return;}streakFreezes=-1;save();applySettings();SOUNDS.freeze();vib([50,30,80]);showToast("🛡 Streak freeze activated!");}
 
 function exportData(){
-  const data={exportDate:new Date().toISOString(),appVersion:"5.0",totalXP,streak,bestStreak,lastActiveDay,todayKey,todayDone,todayNotes,todaySubjects,history,historySubjects,historyNotes,achievements,streakFreezes,lastFreezeWeek,settings,weeklyGoalXP,userName,examDate,weekChallengeIds,weekChallengesWeek,onboardingDone};
+  const data={exportDate:new Date().toISOString(),appVersion:"5.0",totalXP,todayXP,streak,bestStreak,lastActiveDay,todayKey,todayDone,todayNotes,todaySubjects,history,historySubjects,historyNotes,achievements,streakFreezes,lastFreezeWeek,settings,weeklyGoalXP,userName,examDate,weekChallengeIds,weekChallengesWeek,onboardingDone};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);const a=document.createElement("a");
   a.href=url;a.download=`gate-grind-v5-backup-${getToday()}.json`;
@@ -2489,6 +2564,11 @@ function handleImport(input){
       const data=JSON.parse(e.target.result);
       if(data.totalXP===undefined)throw new Error("Invalid format");
       totalXP       =data.totalXP||0;
+      todayXP       =data.todayXP||0;
+      // Reconstruct if missing from imported backup
+      if(!todayXP&&todayDone.length>0){
+        todayXP=todayDone.reduce((a,id)=>{const b=BLOCKS.find(x=>x.id===id);return a+(b?b.xp:0);},0);
+      }
       streak        =data.streak||0;
       bestStreak    =data.bestStreak||0;
       lastActiveDay =data.lastActiveDay||"";
@@ -2590,7 +2670,7 @@ function startMidnightCheck(){
       if(streakFreezes===-1)streakFreezes=0;
       else streak=0;
     }
-    todayKey=nk;todayDone=[];todayNotes={};todaySubjects={};
+    todayKey=nk;todayDone=[];todayNotes={};todaySubjects={};todayXP=0;
     history[todayKey]=[];
     const wk=getWeekKey();
     if(lastFreezeWeek!==wk){streakFreezes=1;lastFreezeWeek=wk;}
