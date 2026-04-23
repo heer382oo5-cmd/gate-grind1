@@ -676,6 +676,59 @@ body{
   from{opacity:0;transform:translateX(-50%) translateY(10px)}
   to{opacity:1;transform:translateX(-50%) translateY(0)}
 }
+/* Undo toast */
+.toast-undo{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);
+  padding:11px 16px 11px 18px;font-size:11px;color:var(--text);z-index:200;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:var(--shadow-lg);pointer-events:auto;
+  animation:toastIn .3s ease;white-space:nowrap;
+}
+.toast-undo-btn{
+  font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:2px;
+  color:var(--gold);background:rgba(255,184,0,.12);
+  border:1px solid rgba(255,184,0,.3);border-radius:6px;
+  padding:4px 10px;cursor:pointer;transition:all .15s;flex-shrink:0;
+}
+.toast-undo-btn:active{background:rgba(255,184,0,.25);}
+/* Weekly goal bar on Today tab */
+.weekly-goal-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 14px;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  background:rgba(4,8,15,.95);
+  flex-shrink:0;z-index:10;
+}
+.wg-label{font-size:8px;letter-spacing:3px;color:var(--muted);font-family:'Bebas Neue',sans-serif;white-space:nowrap;}
+.wg-track{flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.wg-fill{height:100%;border-radius:2px;transition:width .9s cubic-bezier(.34,1.4,.64,1);}
+.wg-val{font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;white-space:nowrap;flex-shrink:0;}
+/* Log search */
+.log-search-bar{
+  display:flex;gap:6px;margin-bottom:10px;
+}
+.log-search-input{
+  flex:1;padding:9px 12px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  color:var(--text);font-size:12px;outline:none;transition:border-color .2s;
+}
+.log-search-input:focus{border-color:var(--blue);}
+.log-filter-btn{
+  padding:9px 11px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);color:var(--muted);font-size:12px;transition:all .18s;
+  font-family:'Bebas Neue',sans-serif;letter-spacing:1px;font-size:9px;
+  white-space:nowrap;flex-shrink:0;
+}
+.log-filter-btn.active{background:rgba(0,200,255,.1);border-color:rgba(0,200,255,.35);color:var(--blue);}
+.log-filter-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.log-load-more{
+  width:100%;padding:12px;margin-top:6px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  color:var(--sub);font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:3px;
+  text-align:center;transition:all .2s;
+}
+.log-load-more:active{border-color:var(--border2);}
 
 /* ── MISC ANIMATIONS ─────────────────────────── */
 @keyframes flameDance{0%,100%{transform:scaleY(1) scaleX(1)}33%{transform:scaleY(1.12) scaleX(.94)}66%{transform:scaleY(.95) scaleX(1.05)}}
@@ -980,6 +1033,13 @@ body{
 
   <!-- QUOTE BAR -->
   <div id="quote-bar"></div>
+
+  <!-- WEEKLY GOAL BAR -->
+  <div class="weekly-goal-bar" id="weekly-goal-bar">
+    <div class="wg-label">WEEK</div>
+    <div class="wg-track"><div class="wg-fill" id="wg-fill"></div></div>
+    <div class="wg-val" id="wg-val"></div>
+  </div>
 
   <!-- INSIGHT STRIP -->
   <div id="insight-strip">
@@ -1289,6 +1349,12 @@ body{
     <div id="tab-log" class="tab-pane">
       <div class="tab-pad">
         <div class="section-hdr">BATTLE RECORD</div>
+        <!-- Search & Filter -->
+        <div class="log-search-bar">
+          <input class="log-search-input" id="log-search" placeholder="Search sessions, subjects, notes..." oninput="_logPage=1;renderLog()" autocomplete="off"/>
+          <button class="log-filter-btn" id="log-filter-btn" onclick="toggleLogFilters()">⚙ FILTER</button>
+        </div>
+        <div class="log-filter-chips" id="log-filter-chips" style="display:none;"></div>
         <div id="log-container"></div>
       </div>
     </div>
@@ -1350,6 +1416,11 @@ body{
           <div class="settings-row">
             <div><div class="settings-label">📳 Vibration</div><div class="settings-sub">Haptic feedback on actions</div></div>
             <div class="toggle" id="tog-vibrate" onclick="toggleSetting('vibrate')"></div>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-label">🔔 Block Reminders</div><div class="settings-sub" id="notif-status-sub">Loading...</div></div>
+            <button id="notif-enable-btn" onclick="handleNotifToggle()"
+              style="padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--sub);font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:2px;transition:all .2s;">ENABLE</button>
           </div>
         </div>
 
@@ -1442,7 +1513,8 @@ const ACHIEVEMENTS=[
 ];
 
 const WEEKLY_CHALLENGES_POOL=[
-  {id:"c_perfect3", icon:"🏆",name:"TRIPLE CROWN",     desc:"Complete 3 perfect days this week", target:3,xp:300,track:(h,keys)=>keys.filter(k=>(h[k]||[]).length===BLOCKS.length).length},
+  {id:"c_perfect3", icon:"🏆",name:"TRIPLE CROWN",     desc:"Complete 3 perfect days this week", target:3,xp:300,
+   track:(h,keys)=>keys.filter(k=>{const done=(h[k]||[]).length;const target=getDayBlockCount(k);return done>0&&done===target;}).length},
   {id:"c_pyqboth5", icon:"⚡",name:"PYQ MACHINE",       desc:"Do both PYQ blocks 5 days",         target:5,xp:250,track:(h,keys)=>keys.filter(k=>(h[k]||[]).includes("p1")&&(h[k]||[]).includes("p2")).length},
   {id:"c_study5",   icon:"📘",name:"STUDY BEAST",       desc:"Complete Study Block I 6 days",     target:6,xp:200,track:(h,keys)=>keys.filter(k=>(h[k]||[]).includes("s1")).length},
   {id:"c_s3_5",     icon:"📙",name:"AFTERNOON WARRIOR", desc:"Complete Study Block III 5 days",   target:5,xp:220,track:(h,keys)=>keys.filter(k=>(h[k]||[]).includes("s3")).length},
@@ -1528,14 +1600,22 @@ function getRank(xp){return RANKS.reduce((r,c)=>xp>=c.min?c:r,RANKS[0]);}
 function getNextRank(xp){return RANKS.find(r=>xp<r.min)||null;}
 function daysWithBlock(s,id){return Object.keys(s.history||{}).filter(k=>k.length===10&&(s.history[k]||[]).includes(id)).length;}
 function daysWithBothPYQ(s){return Object.keys(s.history||{}).filter(k=>k.length===10&&(s.history[k]||[]).includes("p1")&&(s.history[k]||[]).includes("p2")).length;}
-function perfectCount(s){return Object.keys(s.history||{}).filter(k=>k.length===10&&(s.history[k]||[]).length===BLOCKS.length).length;}
+function perfectCount(s){
+  return Object.keys(s.history||{}).filter(k=>{
+    if(k.length!==10)return false;
+    const done=(s.history[k]||[]).length;
+    if(!done)return false;
+    const target=(s.historyBlockCount&&s.historyBlockCount[k])||BLOCKS.length;
+    return done===target;
+  }).length;
+}
 function p2(n){return String(n).padStart(2,"0");}
 function fmtTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return h>0?`${h}:${p2(m)}:${p2(ss)}`:`${p2(m)}:${p2(ss)}`;}
 
 /* ── STATE ──────────────────────────────────────────── */
 let totalXP=0,streak=0,bestStreak=0,lastActiveDay="",todayXP=0;
 let todayKey=getToday(),todayDone=[],todayNotes={},todaySubjects={},todayCustomSessions=[];
-let history={},historySubjects={},historyNotes={},historyCustom={};
+let history={},historySubjects={},historyNotes={},historyCustom={},historyBlockCount={};
 let achievements=[];
 let streakFreezes=1,lastFreezeWeek="";
 let settings={sound:true,vibrate:true};
@@ -1590,7 +1670,7 @@ function save(){
       totalXP,streak,bestStreak,lastActiveDay,todayXP,
       todayKey,todayDone,todayNotes,todaySubjects,todayCustomSessions,
       todayScheduleMode,todayCustomSchedule,savedScheduleTemplates,
-      history,historySubjects,historyNotes,historyCustom,
+      history,historySubjects,historyNotes,historyCustom,historyBlockCount,
       achievements,streakFreezes,lastFreezeWeek,
       settings,weeklyGoalXP,
       userName,examDate,
@@ -1621,6 +1701,7 @@ function save(){
     historySubjects=d.historySubjects&&typeof d.historySubjects==="object"?d.historySubjects:{};
     historyNotes  =d.historyNotes&&typeof d.historyNotes==="object"?d.historyNotes:{};
     historyCustom =d.historyCustom&&typeof d.historyCustom==="object"?d.historyCustom:{};
+    historyBlockCount=d.historyBlockCount&&typeof d.historyBlockCount==="object"?d.historyBlockCount:{};
     achievements  =Array.isArray(d.achievements)?d.achievements:[];
     streakFreezes =d.streakFreezes!=null?d.streakFreezes:1;
     lastFreezeWeek=d.lastFreezeWeek||"";
@@ -1646,10 +1727,25 @@ function save(){
     if(todayKey!==getToday()){
       const prev=new Date(todayKey);const now=new Date(getToday());
       const diff=Math.round((now-prev)/86400000);
-      if(diff>1){
-        if(streakFreezes===-1)streakFreezes=0;
-        else streak=0;
+
+      if(diff===1){
+        // App was closed overnight — normal gap.
+        // lastActiveDay tells us whether user actually did work on todayKey.
+        // If they did (lastActiveDay===todayKey), streak is healthy — markDone
+        // on the new day will see lastActiveDay===yesterday and increment correctly.
+        // If they didn't (lastActiveDay!==todayKey), streak should break unless freeze.
+        if(lastActiveDay!==todayKey){
+          // No work done on the day we're rolling over from
+          if(streakFreezes===-1){streakFreezes=0;} // freeze absorbs it
+          else{streak=0;}
+        }
+        // If lastActiveDay===todayKey, streak continues — do nothing here.
+      } else if(diff>1){
+        // Missed multiple days
+        if(streakFreezes===-1){streakFreezes=0;}
+        else{streak=0;}
       }
+
       todayKey=getToday();todayDone=[];todayNotes={};todaySubjects={};todayXP=0;todayCustomSessions=[];
       todayScheduleMode="standard";todayCustomSchedule=[];
       history[todayKey]=[];
@@ -1721,12 +1817,13 @@ function finishOnboarding(){
 /* ── INIT ───────────────────────────────────────────── */
 function initApp(){
   renderAll();
-  setPomoMode("full");   // must come AFTER renderAll so pomo buttons exist in DOM
+  setPomoMode("full");
   applySettings();
   startQuotes();
   renderStrategy();
   startMidnightCheck();
   setupPWA();
+  startNotificationScheduler();
 }
 
 /* ── RENDER ALL ─────────────────────────────────────── */
@@ -1827,6 +1924,28 @@ function renderHeader(){
   xb.style.background=`linear-gradient(90deg,${rank.color}bb,${next?next.color:rank.color})`;
   xb.style.boxShadow=`0 0 6px ${rank.color}88`;
   document.documentElement.style.setProperty("--accent",rank.color);
+
+  // Weekly XP goal bar — correct: use todayXP for today, history for past days
+  const thisWeekDays=getThisWeekDays();
+  const weekXPFinal=thisWeekDays.reduce((a,k)=>{
+    if(k===todayKey) return a+todayXP; // todayXP = accurate running total with bonuses
+    const bxp=BLOCKS.filter(b=>(history[k]||[]).includes(b.id)).reduce((x,b)=>x+b.xp,0);
+    const cxp=(historyCustom[k]||[]).reduce((x,s)=>x+s.xp,0);
+    return a+bxp+cxp;
+  },0);
+  const wPct=Math.min(weeklyGoalXP>0?weekXPFinal/weeklyGoalXP:0,1)*100;
+  const wgFill=document.getElementById("wg-fill");
+  const wgVal=document.getElementById("wg-val");
+  if(wgFill){
+    const wCol=wPct>=100?"var(--green)":wPct>=70?"var(--blue)":wPct>=40?"var(--warm)":"var(--muted)";
+    wgFill.style.width=wPct+"%";
+    wgFill.style.background=wCol;
+    wgFill.style.boxShadow=wPct>0?`0 0 6px ${wCol}66`:"none";
+  }
+  if(wgVal){
+    wgVal.style.color=wPct>=100?"var(--green)":"var(--sub)";
+    wgVal.textContent=weekXPFinal.toLocaleString()+"/"+weeklyGoalXP.toLocaleString();
+  }
 }
 
 // Cached color helpers (avoids repeated CSS var lookups)
@@ -2007,6 +2126,8 @@ function getActiveBlocks(){
   return(todayScheduleMode==="custom"&&todayCustomSchedule.length>0)?todayCustomSchedule:BLOCKS;
 }
 function getActiveBlockCount(){return getActiveBlocks().length;}
+// Returns the block count for a given day (for display — uses stored count or falls back to BLOCKS.length)
+function getDayBlockCount(day){return historyBlockCount[day]||BLOCKS.length;}
 
 /* ── BLOCKS ─────────────────────────────────────────── */
 function renderBlocks(){
@@ -2056,7 +2177,7 @@ function renderBlocks(){
       <div class="btip">${block.tip}</div>`;
 
     // Subject tags (study blocks only)
-    if(block.type==="study"){
+    if(block.type==="study"||block.type==="revision"){
       const tagRow=document.createElement("div");tagRow.className="subject-row";
       const selSub=todaySubjects[block.id]||null;
       GATE_SUBJECTS.forEach(sub=>{
@@ -2065,12 +2186,12 @@ function renderBlocks(){
         tag.textContent=sub;
         tag.onclick=()=>{
           todaySubjects[block.id]=(selSub===sub)?null:sub;
-          // Persist to historySubjects only for completed blocks
           if(!historySubjects[todayKey])historySubjects[todayKey]={};
-          // Copy only completed blocks' subjects into history
           historySubjects[todayKey]={};
           Object.entries(todaySubjects).forEach(([bid,s])=>{
-            if(s&&todayDone.includes(bid))historySubjects[todayKey][bid]=s;
+            if(!s||!todayDone.includes(bid))return;
+            const blk=getActiveBlocks().find(b=>b.id===bid);
+            historySubjects[todayKey][bid]={sub:s,hrs:blk?blk.hours:0};
           });
           save();renderBlocks();
         };
@@ -2258,7 +2379,7 @@ function renderCustomSessions(){
 const SE_EMOJIS=["📘","📗","📙","⚡","🔥","📝","🧠","💡","📖","🎯","⚙️","🔁","📌","☕","🍱","🍽","😴","🌅","💪","📐"];
 const SE_TYPES =[{v:"study",l:"STUDY"},{v:"pyq",l:"PYQ"},{v:"break",l:"BREAK"},{v:"routine",l:"ROUTINE"},{v:"revision",l:"REVISION"},{v:"mock",l:"MOCK TEST"}];
 const SE_TYPE_COLORS={study:"#00C8FF",pyq:"#FF2D87",break:"#6B7280",routine:"#9B5FFF",revision:"#00E5A0",mock:"#FFB800"};
-const SE_DURATIONS=[0.25,0.5,0.75,1,1.5,2,2.5,3,3.5,4,4.5,5];
+const SE_DURATIONS=[0.25,0.5,0.75,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8];
 const SE_XP_RATE ={study:55,pyq:70,mock:75,revision:45,break:18,routine:35};
 
 let _seTab="edit";           // "edit" | "templates"
@@ -2574,18 +2695,23 @@ function markDone(block){
   todayXP+=earned;
   todayDone=[...todayDone,block.id];
   history[todayKey]=[...todayDone];
+  historyBlockCount[todayKey]=getActiveBlockCount(); // store schedule size for this day
 
-  // Sync historySubjects: only completed blocks' subject tags count
+  // Sync historySubjects: store {sub, hrs} so custom schedule blocks work correctly
   if(!historySubjects[todayKey])historySubjects[todayKey]={};
   historySubjects[todayKey]={};
   Object.entries(todaySubjects).forEach(([bid,s])=>{
-    if(s&&todayDone.includes(bid))historySubjects[todayKey][bid]=s;
+    if(!s||!todayDone.includes(bid))return;
+    const blk=getActiveBlocks().find(b=>b.id===bid);
+    historySubjects[todayKey][bid]={sub:s,hrs:blk?blk.hours:0};
   });
 
-  // Streak logic
+  // Streak logic — compute yesterday relative to todayKey (not wall clock)
+  // so this is correct even when called just after midnight
   if(lastActiveDay!==todayKey){
-    const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
-    const yKey=`${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,"0")}-${String(yesterday.getDate()).padStart(2,"0")}`;
+    const [ty,tm,td]=todayKey.split("-").map(Number);
+    const yDate=new Date(ty,tm-1,td-1);
+    const yKey=`${yDate.getFullYear()}-${String(yDate.getMonth()+1).padStart(2,"0")}-${String(yDate.getDate()).padStart(2,"0")}`;
     if(!lastActiveDay)streak=1;
     else if(lastActiveDay===yKey)streak++;
     else streak=1;
@@ -2608,6 +2734,9 @@ function markDone(block){
   if(document.getElementById("tab-log").classList.contains("active"))renderLog();
   if(document.getElementById("tab-rank").classList.contains("active"))renderRank();
 
+  // Undo toast — 5 second window
+  showUndoToast(block,earned);
+
   if(todayDone.length===getActiveBlockCount()){
     SOUNDS.perfect();vib([100,50,100,50,200]);
     setTimeout(()=>document.getElementById("perfect-banner").scrollIntoView({behavior:"smooth",block:"center"}),400);
@@ -2620,6 +2749,60 @@ function updatePerfectBanner(){
     pb.classList.add("show");
     document.getElementById("perfect-xp").textContent=`+${todayXP} XP EARNED TODAY`;
   }else{pb.className="";}
+}
+
+/* ── UNDO MARK DONE ──────────────────────────────────── */
+let _undoTimer=null;
+
+function showUndoToast(block,earned){
+  // Clear any previous undo
+  if(_undoTimer){clearTimeout(_undoTimer);_undoTimer=null;}
+  const existing=document.getElementById("undo-toast");
+  if(existing)existing.remove();
+
+  const t=document.createElement("div");t.className="toast-undo";t.id="undo-toast";
+  let secs=5;
+  t.innerHTML=`<span>✓ ${block.label}</span>
+    <button class="toast-undo-btn" id="undo-btn">UNDO (${secs}s)</button>`;
+  document.body.appendChild(t);
+
+  const iv=setInterval(()=>{
+    secs--;
+    const btn=document.getElementById("undo-btn");
+    if(btn)btn.textContent="UNDO ("+secs+"s)";
+    if(secs<=0){clearInterval(iv);t.remove();}
+  },1000);
+
+  document.getElementById("undo-btn").onclick=()=>{
+    clearInterval(iv);t.remove();
+    undoMarkDone(block,earned);
+  };
+  _undoTimer=setTimeout(()=>{clearInterval(iv);if(t.parentNode)t.remove();},5200);
+}
+
+function undoMarkDone(block,earned){
+  if(_undoTimer){clearTimeout(_undoTimer);_undoTimer=null;}
+  if(!todayDone.includes(block.id))return;
+  todayDone=todayDone.filter(id=>id!==block.id);
+  history[todayKey]=[...todayDone];
+  totalXP=Math.max(0,totalXP-earned);
+  todayXP=Math.max(0,todayXP-earned);
+  // Revert streak if this was the first block today
+  if(todayDone.length===0&&lastActiveDay===todayKey){
+    // Restore previous streak state — we can't fully reconstruct it,
+    // but at minimum clear lastActiveDay so next mark recalculates
+    lastActiveDay="";
+  }
+  // Revert historySubjects for this block
+  if(historySubjects[todayKey]){
+    const existing=historySubjects[todayKey][block.id];
+    // Handle both old string and new {sub,hrs} format
+    if(existing)delete historySubjects[todayKey][block.id];
+  }
+  save();
+  renderAll();
+  showToast("↩ Undone: "+block.label);
+  SOUNDS.error();
 }
 
 /* ── FX ─────────────────────────────────────────────── */
@@ -2685,7 +2868,7 @@ function showAchievement(ach){
 
 /* ── ACHIEVEMENTS ───────────────────────────────────── */
 function checkAchievements(){
-  const snap={totalXP,streak,bestStreak,history,todayDone};
+  const snap={totalXP,streak,bestStreak,history,historyBlockCount,todayDone};
   const newly=[];
   ACHIEVEMENTS.forEach(a=>{if(!achievements.includes(a.id)&&a.check(snap)){achievements.push(a.id);newly.push(a);}});
   if(newly.length){save();newly.forEach((a,i)=>setTimeout(()=>showAchievement(a),i*4200+600));}
@@ -2730,7 +2913,15 @@ function tickTimer(){
   if(timerState.rem===0){
     clearInterval(timerInterval);
     SOUNDS.timerEnd();vib([200,100,200,100,200]);
-    showToast("⏱ Session complete! Mark it done.");
+    // Auto-find and mark the block done after a short delay
+    const blockId=timerState.blockId;
+    const block=getActiveBlocks().find(b=>b.id===blockId);
+    if(block&&!todayDone.includes(blockId)){
+      showTimerCompletePrompt(block);
+    }else{
+      stopTimer();
+      showToast("⏱ Timer complete!");
+    }
   }
 }
 
@@ -2745,6 +2936,40 @@ function toggleTimer(){
 function stopTimer(){
   clearInterval(timerInterval);timerState=null;
   document.getElementById("timer-bar").classList.remove("active");
+}
+
+function showTimerCompletePrompt(block){
+  // Show a special toast: "Mark Done" button + auto-marks after 5s
+  const existing=document.getElementById("timer-complete-toast");
+  if(existing)existing.remove();
+  const t=document.createElement("div");t.className="toast-undo";t.id="timer-complete-toast";
+  t.innerHTML=`<span>⏱ ${block.label} complete!</span>
+    <button class="toast-undo-btn" onclick="timerAutoMark('${block.id}',true)">MARK DONE</button>`;
+  document.body.appendChild(t);
+  let countdown=5;
+  const iv=setInterval(()=>{
+    countdown--;
+    const btn=t.querySelector(".toast-undo-btn");
+    if(btn)btn.textContent="MARK DONE ("+countdown+"s)";
+    if(countdown<=0){
+      clearInterval(iv);
+      t.remove();
+      timerAutoMark(block.id,false);
+    }
+  },1000);
+  // Store interval so manual click can clear it
+  t._iv=iv;
+  stopTimer();
+}
+
+function timerAutoMark(blockId,manual){
+  const t=document.getElementById("timer-complete-toast");
+  if(t){if(t._iv)clearInterval(t._iv);t.remove();}
+  const block=getActiveBlocks().find(b=>b.id===blockId);
+  if(block&&!todayDone.includes(blockId)){
+    markDone(block);
+    if(manual)showToast("✅ "+block.label+" marked done!");
+  }
 }
 
 /* ── STRATEGY TAB ────────────────────────────────────── */
@@ -2813,10 +3038,15 @@ function setRing(circleId,valId,pct,circ,label){
 
 function renderStats(){
   const circ=2*Math.PI*24;
-  const tPct=todayDone.length/BLOCKS.length;
+  const tPct=getActiveBlockCount()>0?todayDone.length/getActiveBlockCount():0;
   setRing("rg-today","rv-today",tPct,circ,Math.round(tPct*100)+"%");
   const days7=getLast7Days();
-  const wAvg=days7.reduce((a,k)=>a+(history[k]||[]).length,0)/(7*BLOCKS.length);
+  // Week avg: use stored block count per day (custom schedule aware)
+  const wAvg=days7.reduce((a,k)=>{
+    const cnt=(history[k]||[]).length;
+    const target=getDayBlockCount(k);
+    return a+(target>0?cnt/target:0);
+  },0)/7;
   setRing("rg-week","rv-week",wAvg,circ,Math.round(wAvg*100)+"%");
   const{score}=computeReadiness();
   setRing("rg-ready","rv-ready",score/100,circ,score+"%");
@@ -2843,7 +3073,7 @@ function renderStats(){
   },0);
   document.getElementById("s-studyhrs").textContent=sH.toFixed(1)+"h";
   document.getElementById("s-pyqhrs").textContent=pH.toFixed(1)+"h";
-  document.getElementById("s-perfect").textContent=perfectCount({history});
+  document.getElementById("s-perfect").textContent=perfectCount({history,historyBlockCount});
   document.getElementById("s-beststreak").textContent=Math.max(streak,bestStreak);
 
   // 7-day XP chart — block XP + custom session XP
@@ -2921,34 +3151,43 @@ function renderStats(){
     });
   }
 
-  // Subject hours — standard blocks (completed) + custom sessions
+  // Subject hours — handles both old (string) and new ({sub,hrs}) historySubjects format
   const subHrs={};
+  function _getSubHrs(val){
+    // New format: {sub:"Maths",hrs:2} | Old format: "Maths"
+    if(val&&typeof val==="object")return{sub:val.sub,hrs:val.hrs||0};
+    if(typeof val==="string"&&val)return{sub:val,hrs:0}; // old — no hrs stored
+    return null;
+  }
   Object.keys(historySubjects).forEach(day=>{
     const subs=historySubjects[day]||{};
     const completedBlocks=history[day]||[];
-    Object.entries(subs).forEach(([blockId,sub])=>{
-      if(!sub||!completedBlocks.includes(blockId))return;
-      const blk=BLOCKS.find(b=>b.id===blockId);
-      subHrs[sub]=(subHrs[sub]||0)+(blk?blk.hours:0);
+    Object.entries(subs).forEach(([blockId,val])=>{
+      const entry=_getSubHrs(val);
+      if(!entry||!entry.sub||!completedBlocks.includes(blockId))return;
+      // hrs: from stored value (new), or fallback to BLOCKS lookup, or 0
+      const hrs=entry.hrs||((blk=>blk?blk.hours:0)(BLOCKS.find(b=>b.id===blockId)));
+      subHrs[entry.sub]=(subHrs[entry.sub]||0)+hrs;
     });
   });
-  // Add custom session hours (they have their own subject tags)
+  // Custom session hours
   Object.keys(historyCustom).forEach(day=>{
     (historyCustom[day]||[]).forEach(s=>{
       if(s.subject&&s.hours)subHrs[s.subject]=(subHrs[s.subject]||0)+s.hours;
     });
   });
-  // Include today's completed blocks and custom sessions not yet in history
+  // Today's tagged+completed not yet flushed (edge case)
   Object.entries(todaySubjects).forEach(([blockId,sub])=>{
     if(!sub||!todayDone.includes(blockId))return;
-    if(historySubjects[todayKey]&&historySubjects[todayKey][blockId]===sub)return;
-    const blk=BLOCKS.find(b=>b.id===blockId);
+    const existing=historySubjects[todayKey]&&historySubjects[todayKey][blockId];
+    if(existing)return; // already counted
+    const blk=getActiveBlocks().find(b=>b.id===blockId);
     subHrs[sub]=(subHrs[sub]||0)+(blk?blk.hours:0);
   });
   todayCustomSessions.forEach(s=>{
     if(s.subject&&s.hours){
-      const alreadyCounted=(historyCustom[todayKey]||[]).some(c=>c.id===s.id);
-      if(!alreadyCounted)subHrs[s.subject]=(subHrs[s.subject]||0)+s.hours;
+      const already=(historyCustom[todayKey]||[]).some(c=>c.id===s.id);
+      if(!already)subHrs[s.subject]=(subHrs[s.subject]||0)+s.hours;
     }
   });
   const subEl=document.getElementById("subject-stats-container");
@@ -2977,7 +3216,7 @@ function renderStats(){
   const ag=document.getElementById("ach-grid");
   if(ag){
     ag.innerHTML="";
-    const snap={totalXP,streak,bestStreak,history,todayDone};
+    const snap={totalXP,streak,bestStreak,history,historyBlockCount,todayDone};
     ACHIEVEMENTS.forEach(a=>{
       const unlocked=achievements.includes(a.id)||a.check(snap);
       const card=document.createElement("div");
@@ -3094,9 +3333,7 @@ function renderHeatmap(){
     const studyH=BLOCKS.filter(b=>b.type==="study"&&blocks.includes(b.id)).reduce((a,b)=>a+b.hours,0);
     const pyqH  =BLOCKS.filter(b=>b.type==="pyq"  &&blocks.includes(b.id)).reduce((a,b)=>a+b.hours,0);
     const totalH=studyH+pyqH;
-    const isPerfect=blocks.length===BLOCKS.length&&blocks.length>0;
-
-    // Colour intensity by hours
+    const isPerfect=blocks.length>0&&blocks.length===getDayBlockCount(dateKey);
     let bg;
     if(isFuture){         bg="rgba(255,255,255,.03)";}
     else if(totalH===0){  bg="#0e1828";}
@@ -3137,37 +3374,135 @@ function heatmapNav(dir){
 }
 
 /* ── LOG ─────────────────────────────────────────────── */
+/* ── LOG STATE ───────────────────────────────────────── */
+let _logPage=1;
+const LOG_PAGE_SIZE=20;
+let _logActiveFilter="all"; // "all"|"perfect"|"study"|"pyq"|"custom"
+let _logFiltersOpen=false;
+
+function toggleLogFilters(){
+  _logFiltersOpen=!_logFiltersOpen;
+  const chips=document.getElementById("log-filter-chips");
+  const btn=document.getElementById("log-filter-btn");
+  if(!chips||!btn)return;
+  chips.style.display=_logFiltersOpen?"flex":"none";
+  btn.classList.toggle("active",_logFiltersOpen);
+  if(_logFiltersOpen)_renderLogFilterChips();
+}
+
+function _renderLogFilterChips(){
+  const chips=document.getElementById("log-filter-chips");if(!chips)return;
+  chips.innerHTML="";
+  const filters=[
+    {k:"all",l:"ALL DAYS"},
+    {k:"perfect",l:"🏆 PERFECT"},
+    {k:"study",l:"📘 STUDY"},
+    {k:"pyq",l:"⚡ PYQ"},
+    {k:"custom",l:"✏ CUSTOM"},
+  ];
+  filters.forEach(f=>{
+    const btn=document.createElement("button");
+    btn.className="subject-tag "+(f.k===_logActiveFilter?"sel":"unsel");
+    btn.textContent=f.l;
+    btn.onclick=()=>{_logActiveFilter=f.k;_logPage=1;renderLog();};
+    chips.appendChild(btn);
+  });
+}
+
 function renderLog(){
   const c=document.getElementById("log-container");c.innerHTML="";
-  // Collect all days that have any activity (standard blocks OR custom sessions)
+  const query=((document.getElementById("log-search")||{}).value||"").trim().toLowerCase();
+
+  // Collect all active days
   const daySet=new Set([
     ...Object.keys(history).filter(k=>k.length===10&&(history[k]||[]).length>0),
     ...Object.keys(historyCustom).filter(k=>k.length===10&&(historyCustom[k]||[]).length>0)
   ]);
-  const allDays=[...daySet].sort().reverse();
+  let allDays=[...daySet].sort().reverse();
+
   if(!allDays.length){
     c.innerHTML='<div style="text-align:center;padding:40px 16px;color:var(--muted);font-size:12px;font-style:italic;">No activity logged yet. Complete your first block today.</div>';
     return;
   }
-  allDays.slice(0,30).forEach(day=>{
+
+  // Rebuild filter chips UI if open
+  if(_logFiltersOpen)_renderLogFilterChips();
+
+  // ── FILTER ──
+  if(_logActiveFilter==="perfect"){
+    allDays=allDays.filter(k=>{const b=history[k]||[];return b.length>0&&b.length===getDayBlockCount(k);});
+  }else if(_logActiveFilter==="study"){
+    allDays=allDays.filter(k=>BLOCKS.some(b=>b.type==="study"&&(history[k]||[]).includes(b.id)));
+  }else if(_logActiveFilter==="pyq"){
+    allDays=allDays.filter(k=>BLOCKS.some(b=>b.type==="pyq"&&(history[k]||[]).includes(b.id)));
+  }else if(_logActiveFilter==="custom"){
+    allDays=allDays.filter(k=>(historyCustom[k]||[]).length>0);
+  }
+
+  // ── SEARCH ──
+  if(query){
+    allDays=allDays.filter(day=>{
+      // Match date string
+      const d=new Date(day);
+      const dateStr=d.toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).toLowerCase();
+      if(dateStr.includes(query))return true;
+      // Match block labels and subjects
+      const blocks=history[day]||[];
+      if(blocks.some(id=>{
+        const b=BLOCKS.find(x=>x.id===id);
+        if(!b)return false;
+        if(b.label.toLowerCase().includes(query))return true;
+        const v=historySubjects[day]&&historySubjects[day][id];
+        const subName=v?(typeof v==="object"?v.sub:v):"";
+        if(subName.toLowerCase().includes(query))return true;
+        return false;
+      }))return true;
+      // Match notes
+      const notes=historyNotes[day]||{};
+      if(Object.values(notes).some(n=>n&&n.toLowerCase().includes(query)))return true;
+      // Match custom sessions
+      const custom=historyCustom[day]||[];
+      if(custom.some(s=>
+        s.name.toLowerCase().includes(query)||
+        (s.subject&&s.subject.toLowerCase().includes(query))||
+        (CUSTOM_TYPE_LABELS[s.type]||"").toLowerCase().includes(query)
+      ))return true;
+      return false;
+    });
+  }
+
+  if(!allDays.length){
+    c.innerHTML='<div style="text-align:center;padding:32px 16px;color:var(--muted);font-size:12px;font-style:italic;">No results found. Try a different search or filter.</div>';
+    return;
+  }
+
+  // ── PAGINATE ──
+  const total=allDays.length;
+  const pageDays=allDays.slice(0,_logPage*LOG_PAGE_SIZE);
+
+  pageDays.forEach(day=>{
     const blocks=history[day]||[];
     const custom=historyCustom[day]||[];
     const blockXP=blocks.reduce((a,id)=>{const b=BLOCKS.find(x=>x.id===id);return a+(b?b.xp:0);},0);
     const customXP=custom.reduce((a,s)=>a+s.xp,0);
     const dayXP=blockXP+customXP;
     const d=new Date(day);
-    const dayStr=d.toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
-    const isPerfect=blocks.length===BLOCKS.length;
+    const dayStr=d.toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+    const isPerfect=blocks.length>0&&blocks.length===getDayBlockCount(day);
+
     const div=document.createElement("div");div.className="log-day";
     const hdr=document.createElement("div");hdr.className="log-day-hdr";
+    const dayTarget=getDayBlockCount(day);
     hdr.innerHTML=`<div style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text);">${isPerfect?"🏆 ":""}${dayStr.toUpperCase()}</div>
-      <div style="font-size:10px;color:var(--gold);font-family:'Bebas Neue',sans-serif;letter-spacing:1px;">+${dayXP}XP · ${blocks.length}/${BLOCKS.length} BLOCKS${custom.length?" · "+custom.length+" CUSTOM":""}</div>`;
+      <div style="font-size:10px;color:var(--gold);font-family:'Bebas Neue',sans-serif;letter-spacing:1px;">+${dayXP}XP · ${blocks.length}/${dayTarget} BLOCKS${custom.length?" · "+custom.length+" CUSTOM":""}</div>`;
     div.appendChild(hdr);
+
     // Standard blocks
     blocks.forEach(id=>{
       const b=BLOCKS.find(x=>x.id===id);if(!b)return;
       const entry=document.createElement("div");entry.className="log-entry";
-      const sub=historySubjects[day]?historySubjects[day][id]||"":null;
+      const v=historySubjects[day]&&historySubjects[day][id];
+      const sub=v?(typeof v==="object"?v.sub:v):null;
       entry.innerHTML=`<div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:14px;">${b.emoji}</span>
           <div>
@@ -3180,6 +3515,7 @@ function renderLog(){
       const note=historyNotes[day]?historyNotes[day][id]:"";
       if(note){const nd=document.createElement("div");nd.className="log-note";nd.textContent="📝 "+note;div.appendChild(nd);}
     });
+
     // Custom sessions
     custom.forEach(s=>{
       const col=CUSTOM_TYPE_COLORS[s.type]||"#9B5FFF";
@@ -3196,8 +3532,24 @@ function renderLog(){
         <div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:${col};letter-spacing:1px;">+${s.xp}XP</div>`;
       div.appendChild(entry);
     });
+
     c.appendChild(div);
   });
+
+  // Load more button
+  if(pageDays.length<total){
+    const remaining=total-pageDays.length;
+    const btn=document.createElement("button");
+    btn.className="log-load-more";
+    btn.textContent=`LOAD MORE — ${remaining} DAY${remaining>1?"S":""} REMAINING`;
+    btn.onclick=()=>{_logPage++;renderLog();};
+    c.appendChild(btn);
+  }else if(total>LOG_PAGE_SIZE){
+    const done=document.createElement("div");
+    done.style.cssText="text-align:center;padding:14px 0;font-size:9px;color:var(--muted);letter-spacing:2px;font-family:'Bebas Neue',sans-serif;";
+    done.textContent="ALL "+total+" DAYS SHOWN";
+    c.appendChild(done);
+  }
 }
 
 /* ── RANK ────────────────────────────────────────────── */
@@ -3260,6 +3612,7 @@ function applySettings(){
   }else{
     document.getElementById("exam-date-display").textContent="Not set";
   }
+  _updateNotifUI();
 }
 
 function toggleSetting(k){
@@ -3267,13 +3620,60 @@ function toggleSetting(k){
   if(k==="sound"&&settings.sound)SOUNDS.complete();
   if(k==="vibrate"&&settings.vibrate)vib([30,10,50]);
 }
+
+function handleNotifToggle(){
+  if(!("Notification" in window)){showToast("Notifications not supported on this browser");return;}
+  if(Notification.permission==="granted"){
+    showToast("🔔 Notifications already enabled");return;
+  }
+  Notification.requestPermission().then(perm=>{
+    applySettings();
+    if(perm==="granted"){startNotificationScheduler();showToast("🔔 Reminders enabled!");}
+    else showToast("Notifications blocked — enable in browser settings");
+  });
+}
+
+function _updateNotifUI(){
+  const sub=document.getElementById("notif-status-sub");
+  const btn=document.getElementById("notif-enable-btn");
+  if(!sub||!btn)return;
+  if(!("Notification" in window)){
+    sub.textContent="Not supported on this browser";
+    btn.style.display="none";return;
+  }
+  const p=Notification.permission;
+  if(p==="granted"){
+    sub.textContent="Active — block start times + streak alerts";
+    sub.style.color="var(--green)";
+    btn.textContent="ENABLED ✓";
+    btn.style.background="rgba(0,229,160,.1)";
+    btn.style.borderColor="rgba(0,229,160,.3)";
+    btn.style.color="var(--green)";
+    btn.onclick=()=>showToast("🔔 Notifications are already active");
+  } else if(p==="denied"){
+    sub.textContent="Blocked — allow in browser/phone settings";
+    sub.style.color="var(--red)";
+    btn.textContent="BLOCKED";
+    btn.style.borderColor="rgba(255,85,85,.3)";
+    btn.style.color="var(--red)";
+    btn.onclick=()=>showToast("Unblock in browser Settings → Site permissions");
+  } else {
+    sub.textContent="Off — tap to enable block reminders";
+    sub.style.color="";
+    btn.textContent="ENABLE";
+    btn.style.background="";
+    btn.style.borderColor="";
+    btn.style.color="";
+    btn.onclick=handleNotifToggle;
+  }
+}
 function updateGoal(v){weeklyGoalXP=parseInt(v,10);document.getElementById("goal-display").textContent=parseInt(v,10).toLocaleString();save();renderHeader();}
 function updateName(v){userName=v;save();renderHeader();}
 function updateExamDate(v){examDate=v;save();renderHeader();}
 function useStreakFreeze(){if(streakFreezes<=0){SOUNDS.error();return;}streakFreezes=-1;save();applySettings();SOUNDS.freeze();vib([50,30,80]);showToast("🛡 Streak freeze activated!");}
 
 function exportData(){
-  const data={exportDate:new Date().toISOString(),appVersion:"5.0",totalXP,todayXP,streak,bestStreak,lastActiveDay,todayKey,todayDone,todayNotes,todaySubjects,todayCustomSessions,todayScheduleMode,todayCustomSchedule,savedScheduleTemplates,history,historySubjects,historyNotes,historyCustom,achievements,streakFreezes,lastFreezeWeek,settings,weeklyGoalXP,userName,examDate,weekChallengeIds,weekChallengesWeek,onboardingDone};
+  const data={exportDate:new Date().toISOString(),appVersion:"5.0",totalXP,todayXP,streak,bestStreak,lastActiveDay,todayKey,todayDone,todayNotes,todaySubjects,todayCustomSessions,todayScheduleMode,todayCustomSchedule,savedScheduleTemplates,history,historySubjects,historyNotes,historyCustom,historyBlockCount,achievements,streakFreezes,lastFreezeWeek,settings,weeklyGoalXP,userName,examDate,weekChallengeIds,weekChallengesWeek,onboardingDone};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);const a=document.createElement("a");
   a.href=url;a.download=`gate-grind-v5-backup-${getToday()}.json`;
@@ -3305,6 +3705,7 @@ function handleImport(input){
       historySubjects=data.historySubjects||{};
       historyNotes  =data.historyNotes||{};
       historyCustom =data.historyCustom&&typeof data.historyCustom==="object"?data.historyCustom:{};
+      historyBlockCount=data.historyBlockCount&&typeof data.historyBlockCount==="object"?data.historyBlockCount:{};
       achievements  =data.achievements||[];
       streakFreezes =data.streakFreezes!=null?data.streakFreezes:1;
       lastFreezeWeek=data.lastFreezeWeek||"";
@@ -3346,7 +3747,7 @@ function switchTab(tab){
   });
   document.getElementById("scroll-area").scrollTop=0;
   if(tab==="stats")renderStats();
-  if(tab==="log")renderLog();
+  if(tab==="log"){_logPage=1;renderLog();}
   if(tab==="rank")renderRank();
   if(tab==="settings")applySettings();
 }
@@ -3399,10 +3800,28 @@ function startMidnightCheck(){
     const nk=getToday();if(nk===todayKey)return;
     const prev=new Date(todayKey);const now=new Date(nk);
     const diff=Math.round((now-prev)/86400000);
-    if(diff>1){
-      if(streakFreezes===-1)streakFreezes=0;
-      else streak=0;
+
+    // ── STREAK EVALUATION before clearing today ──────────────
+    // We're rolling over from todayKey → nk (new day).
+    // If the user did work today (todayDone.length>0 OR lastActiveDay===todayKey),
+    // their streak should carry forward to tomorrow correctly.
+    // The markDone streak logic already set lastActiveDay = todayKey when they completed
+    // a block, so we just need to protect against multi-day gaps here.
+    if(diff===1){
+      // Normal overnight: nothing to do — lastActiveDay is already set correctly.
+      // When user marks their first block tomorrow, markDone will see
+      // lastActiveDay === yesterday (today) and increment streak. ✅
+    } else if(diff>1){
+      // Missed at least one full day
+      if(streakFreezes===-1){
+        // Freeze was active — absorb one missed day, clear freeze token
+        streakFreezes=0;
+      } else {
+        streak=0;
+      }
     }
+
+    // ── ROLLOVER ─────────────────────────────────────────────
     todayKey=nk;todayDone=[];todayNotes={};todaySubjects={};todayXP=0;todayCustomSessions=[];
     todayScheduleMode="standard";todayCustomSchedule=[];
     history[todayKey]=[];
@@ -3419,7 +3838,6 @@ function setupPWA(){
 
   navigator.serviceWorker.register("./sw.js")
     .then(reg=>{
-      // Listen for updates
       reg.addEventListener("updatefound",()=>{
         const w=reg.installing;
         if(w)w.addEventListener("statechange",()=>{
@@ -3430,21 +3848,84 @@ function setupPWA(){
     })
     .catch(err=>console.warn("SW registration failed:",err));
 
-  // Capture the install prompt
   window.addEventListener("beforeinstallprompt",e=>{
-    e.preventDefault();
-    window._installPrompt=e;
+    e.preventDefault();window._installPrompt=e;
     const btn=document.getElementById("install-btn");
     if(btn){btn.style.display="flex";}
   });
-
-  // Hide install button after successful install
   window.addEventListener("appinstalled",()=>{
     window._installPrompt=null;
     const btn=document.getElementById("install-btn");
     if(btn)btn.style.display="none";
     showToast("✅ GATE Grind installed!");
   });
+
+  // Request notification permission
+  requestNotificationPermission();
+}
+
+function requestNotificationPermission(){
+  if(!("Notification" in window))return;
+  if(Notification.permission==="granted"){
+    startNotificationScheduler();return;
+  }
+  if(Notification.permission==="default"){
+    setTimeout(()=>{
+      Notification.requestPermission().then(perm=>{
+        if(perm==="granted")startNotificationScheduler();
+      });
+    },3000);
+  }
+}
+
+function sendNotification(title,body,tag){
+  if(!("Notification" in window)||Notification.permission!=="granted")return;
+  try{
+    new Notification(title,{
+      body,tag:tag||"gate-grind",
+      icon:"./icon-192.png",
+      badge:"./icon-192.png",
+      silent:false
+    });
+  }catch(e){}
+}
+
+// Check block timings every minute and fire reminders
+function startNotificationScheduler(){
+  if(!("Notification" in window)||Notification.permission!=="granted")return;
+  if(window._notifSchedulerRunning)return; // prevent duplicate intervals
+  window._notifSchedulerRunning=true;
+  setInterval(()=>{
+    if(document.hidden===false)return; // only notify when app is in background
+    const now=new Date();
+    const hh=now.getHours(),mm=now.getMinutes();
+    const timeStr=`${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}`;
+    // Check each active block start time
+    getActiveBlocks().forEach(b=>{
+      if(todayDone.includes(b.id))return;
+      // Parse start time from b.time (e.g. "7:00–9:00 AM")
+      const match=(b.time||"").match(/^(\d{1,2}):(\d{2})/);
+      if(!match)return;
+      let bh=parseInt(match[1],10),bm=parseInt(match[2],10);
+      if(b.time.includes("PM")&&bh!==12)bh+=12;
+      if(b.time.includes("AM")&&bh===12)bh=0;
+      if(bh===hh&&bm===mm){
+        sendNotification(
+          "⚔️ "+b.label+" — time to start!",
+          b.tip||"Stay focused. You're building your rank.",
+          "block-"+b.id
+        );
+      }
+    });
+    // Streak at-risk reminder (9 PM if no blocks done)
+    if(hh===21&&mm===0&&todayDone.length===0){
+      sendNotification(
+        "🔥 Streak at risk!",
+        `${streak}-day streak will break if you don't complete at least one block today.`,
+        "streak-risk"
+      );
+    }
+  },60000);
 }
 
 function triggerInstall(){
